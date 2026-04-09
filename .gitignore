@@ -3,7 +3,6 @@
 .DS_Store
 .idea/
 .claude/
-MoniVillageBotV2/
 
 /node_modules
 npm-debug.log*
