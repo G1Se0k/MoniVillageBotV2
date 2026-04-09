@@ -1,0 +1,28 @@
+{
+  "name": "MoniVillageBotV2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "nodemon --exec ts-node src/index.ts",
+    "deploy": "ts-node src/deployCommands.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.5.2",
+    "eslint": "^10.1.0",
+    "nodemon": "^3.1.14",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.58.0"
+  },
+  "private": true,
+  "dependencies": {
+    "discord.js": "^14.26.0",
+    "dotenv": "^17.4.0",
+    "mysql2": "^3.20.0",
+    "sequelize": "^6.37.8"
+  }
+}
