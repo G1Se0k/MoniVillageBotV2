@@ -1,5 +1,6 @@
 # 환경변수 (절대 커밋 금지)
 .env
+.env.*
 src/.env
 
 # 빌드 결과물
@@ -10,12 +11,26 @@ node_modules/
 
 # 로그
 *.log
+logs/
 npm-debug.log*
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # IDE
 .idea/
 .vscode/
+*.iml
+
+# Docker
+*.tar
+
+# Claude Code
+.claude/
+
+# 임시 파일
+*.tmp
+*.swp
+*.bak
