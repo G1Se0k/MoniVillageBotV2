@@ -53,5 +53,8 @@ MV_MBTI.init(
     tableName: 'MV_MBTI',
     freezeTableName: true,
     timestamps: false,
+    indexes: [
+      { name: 'idx_mbti_user_guild_at', fields: ['USER_ID', 'GUILD_ID', 'SELECTED_AT'] },
+    ],
   },
 );

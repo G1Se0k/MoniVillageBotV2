@@ -16,3 +16,5 @@ export const CUSTOM_IDS = {
   NICKNAME_MODAL: 'nickname_modal',
   NICKNAME_INPUT: 'nickname_input',
 } as const;
+
+export const BOT_NICK_REGEX = /^\S+ .+\/[A-Z]{4} \S+$/;

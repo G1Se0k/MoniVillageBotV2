@@ -7,12 +7,17 @@ import { resolveNewNickname } from './mbtiInteraction';
 export async function initMember(member: GuildMember) {
   const { guild, user } = member;
 
+  // Guild must exist before user (FK constraint); roles only need guild to exist
+  let mbtiGroupRoles;
   try {
     await MV_GUILD.findOrCreate({ where: { GUILD_ID: guild.id } });
-    await MV_USER.findOrCreate({
-      where: { USER_ID: user.id, GUILD_ID: guild.id },
-      defaults: { USER_ID: user.id, GUILD_ID: guild.id, MBTI_TYPE: 'NONE' },
-    });
+    [, mbtiGroupRoles] = await Promise.all([
+      MV_USER.findOrCreate({
+        where: { USER_ID: user.id, GUILD_ID: guild.id },
+        defaults: { USER_ID: user.id, GUILD_ID: guild.id, MBTI_TYPE: 'NONE' },
+      }),
+      findMbtiGroupRoles(guild.id),
+    ]);
     console.log(`[INIT] DB record created for ${user.id} in guild ${guild.id}`);
   } catch (err) {
     console.error(`[INIT] DB record creation failed for ${user.id} in guild ${guild.id}:`, err);
@@ -20,7 +25,6 @@ export async function initMember(member: GuildMember) {
   }
 
   try {
-    const mbtiGroupRoles = await findMbtiGroupRoles(guild.id);
     const noRole = mbtiGroupRoles.find((r) => r.ROLE_NAME.startsWith('NO'));
     if (noRole) {
       await member.roles.add(noRole.ROLE_ID);

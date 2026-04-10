@@ -2,6 +2,9 @@ import { StringSelectMenuInteraction } from 'discord.js';
 import { MV_MBTI } from '../database/models/MV_MBTI';
 import { MV_USER } from '../database/models/MV_USER';
 import { findMbtiGroupRoles, MbtiRolePrefix } from '../database/models/MV_ROLE';
+import { MBTI_TYPES } from '../constants/mbti';
+
+const MBTI_TYPE_SET = new Set<string>([...MBTI_TYPES, 'BABO']);
 
 const MBTI_GROUP_EMOJIS: Record<MbtiRolePrefix, string> = {
   IS: '🟩',
@@ -72,16 +75,28 @@ export async function handleMbtiSelect(interaction: StringSelectMenuInteraction)
   try {
     const member = await guild.members.fetch(user.id);
     const staleRoleIds = mbtiGroupRoles.map((r) => r.ROLE_ID).filter((id) => member.roles.cache.has(id));
-    if (staleRoleIds.length > 0) await member.roles.remove(staleRoleIds);
+
+    // 현재 닉네임에 MBTI 대신 커스텀 4글자 영어가 설정된 경우 해당 타입 유지
+    const currentNickSource = member.nickname ?? member.displayName;
+    const typeMatch = currentNickSource.match(/\/([A-Z]{4})\s/);
+    const currentType = typeMatch?.[1];
+    const displayType =
+      currentType && !MBTI_TYPE_SET.has(currentType)
+        ? currentType
+        : selectedType === 'NONE' ? 'BABO' : selectedType;
+    const newNick = resolveNewNickname(member.nickname, member.displayName, displayType, prefix);
+
+    await Promise.all([
+      ...(staleRoleIds.length > 0 ? [member.roles.remove(staleRoleIds)] : []),
+      ...(matchingRole ? [member.roles.add(matchingRole.ROLE_ID)] : []),
+      ...(!isOwner ? [member.setNickname(newNick)] : []),
+    ]);
+
     if (matchingRole) {
-      await member.roles.add(matchingRole.ROLE_ID);
       roleAssigned = true;
       console.log(`[MBTI] Assigned role "${matchingRole.ROLE_NAME}" to ${user.tag} (${user.id}) in guild ${guild.id}`);
     }
-
     if (!isOwner) {
-      const newNick = resolveNewNickname(member.nickname, member.displayName, selectedType === 'NONE' ? 'BABO' : selectedType, prefix);
-      await member.setNickname(newNick);
       console.log(`[MBTI] Nickname updated to "${newNick}" for ${user.tag} (${user.id}) in guild ${guild.id}`);
     }
   } catch (err) {

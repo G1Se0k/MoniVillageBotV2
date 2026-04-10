@@ -1,7 +1,6 @@
 import { PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../types/slashCommand';
-import { MV_GUILD } from '../database/models/MV_GUILD';
-import { MV_ROLE } from '../database/models/MV_ROLE';
+import { MV_ROLE, invalidateMbtiRoleCache } from '../database/models/MV_ROLE';
 import { SyncStatus, syncMbtiGroupRole, findMbtiGroupRoles, MBTI_ROLE_PREFIXES, MbtiRolePrefix } from './mbti';
 
 export const role: SlashCommand = {
@@ -21,33 +20,28 @@ export const role: SlashCommand = {
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === '등록') {
-      await MV_GUILD.findOrCreate({ where: { GUILD_ID: guild.id } });
-
       const fetchedRoles = await guild.roles.fetch();
-      const guildRoles = fetchedRoles.filter((r) => r.name !== '@everyone');
+      const toCreate = fetchedRoles
+        .filter((r) => r.name !== '@everyone')
+        .map((r) => ({ ROLE_ID: r.id, GUILD_ID: guild.id, ROLE_NAME: r.name }));
 
-      let registered = 0;
-      let skipped = 0;
-      const failed: string[] = [];
+      const existingIds = new Set(
+        (await MV_ROLE.findAll({ where: { ROLE_ID: toCreate.map((r) => r.ROLE_ID) }, attributes: ['ROLE_ID'] }))
+          .map((r) => r.ROLE_ID),
+      );
 
-      for (const [, guildRole] of guildRoles) {
-        try {
-          const [, created] = await MV_ROLE.findOrCreate({
-            where: { ROLE_ID: guildRole.id },
-            defaults: { ROLE_ID: guildRole.id, GUILD_ID: guild.id, ROLE_NAME: guildRole.name },
-          });
-          created ? registered++ : skipped++;
-        } catch (err) {
-          console.error(`역할 등록 실패 [${guildRole.name}]:`, err);
-          failed.push(guildRole.name);
-        }
+      const newRoles = toCreate.filter((r) => !existingIds.has(r.ROLE_ID));
+      if (newRoles.length > 0) {
+        await MV_ROLE.bulkCreate(newRoles, { ignoreDuplicates: true });
       }
 
-      const failedMsg = failed.length > 0 ? `\n실패: **${failed.length}개** (${failed.join(', ')})` : '';
+      const registered = newRoles.length;
+      const skipped = toCreate.length - registered;
+
       await interaction.editReply({
-        content: `역할 등록 완료!\n새로 등록: **${registered}개** | 이미 존재: **${skipped}개**${failedMsg}`,
+        content: `역할 등록 완료!\n새로 등록: **${registered}개** | 이미 존재: **${skipped}개**`,
       });
-      console.log(`Guild ${guild.id}: roles registered=${registered}, skipped=${skipped}, failed=${failed.length}`);
+      console.log(`Guild ${guild.id}: roles registered=${registered}, skipped=${skipped}`);
       return;
     }
 
@@ -65,17 +59,21 @@ export const role: SlashCommand = {
     }
 
     if (subcommand === 'mbti그룹') {
-      await MV_GUILD.findOrCreate({ where: { GUILD_ID: guild.id } });
-
       const [dbRoles, fetchedRoles] = await Promise.all([findMbtiGroupRoles(guild.id), guild.roles.fetch()]);
       const discordRoles = fetchedRoles.filter((r) => r.name !== '@everyone');
 
       const results: Record<SyncStatus, string[]> = { db: [], registered: [], created: [], recreated: [] };
 
-      for (const prefix of MBTI_ROLE_PREFIXES) {
-        const status = await syncMbtiGroupRole(guild, prefix as MbtiRolePrefix, dbRoles, discordRoles);
+      const syncResults = await Promise.all(
+        MBTI_ROLE_PREFIXES.map((prefix) =>
+          syncMbtiGroupRole(guild, prefix as MbtiRolePrefix, dbRoles, discordRoles).then((status) => ({ prefix, status })),
+        ),
+      );
+      for (const { prefix, status } of syncResults) {
         results[status].push(prefix);
       }
+
+      invalidateMbtiRoleCache(guild.id);
 
       const lines: string[] = [];
       if (results.db.length > 0) lines.push(`이미 DB 등록: **${results.db.join(', ')}**`);

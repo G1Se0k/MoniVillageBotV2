@@ -36,11 +36,22 @@ MV_ROLE.init(
     tableName: 'MV_ROLE',
     freezeTableName: true,
     timestamps: false,
+    indexes: [
+      { name: 'idx_role_guild', fields: ['GUILD_ID'] },
+      { name: 'idx_role_guild_name', fields: ['GUILD_ID', 'ROLE_NAME'] },
+    ],
   },
 );
 
+// In-memory cache for MBTI group roles per guild (TTL: 5 minutes)
+const ROLE_CACHE_TTL = 5 * 60 * 1000;
+const mbtiRoleCache = new Map<string, { roles: MV_ROLE[]; expiresAt: number }>();
+
 export async function findMbtiGroupRoles(guildId: string): Promise<MV_ROLE[]> {
-  return MV_ROLE.findAll({
+  const cached = mbtiRoleCache.get(guildId);
+  if (cached && cached.expiresAt > Date.now()) return cached.roles;
+
+  const roles = await MV_ROLE.findAll({
     where: {
       GUILD_ID: guildId,
       [Op.or]: MBTI_ROLE_PREFIXES.map((prefix) => ({
@@ -48,6 +59,13 @@ export async function findMbtiGroupRoles(guildId: string): Promise<MV_ROLE[]> {
       })),
     },
   });
+
+  mbtiRoleCache.set(guildId, { roles, expiresAt: Date.now() + ROLE_CACHE_TTL });
+  return roles;
+}
+
+export function invalidateMbtiRoleCache(guildId: string): void {
+  mbtiRoleCache.delete(guildId);
 }
 
 export async function registerRoleToDb(roleId: string, guildId: string, roleName: string): Promise<MV_ROLE> {

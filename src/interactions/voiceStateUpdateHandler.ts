@@ -1,7 +1,6 @@
 import { VoiceState } from 'discord.js';
 import { initMember } from './initMember';
-
-const BOT_NICK_REGEX = /^\S+ .+\/[A-Z]{4} \S+$/;
+import { BOT_NICK_REGEX } from '../constants/mbti';
 
 export async function handleVoiceStateUpdate(oldState: VoiceState, newState: VoiceState) {
   if (oldState.channelId !== null || newState.channelId === null || !newState.member) return;

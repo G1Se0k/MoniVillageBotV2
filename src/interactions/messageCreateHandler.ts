@@ -1,7 +1,6 @@
 import { Message } from 'discord.js';
 import { initMember } from './initMember';
-
-const BOT_NICK_REGEX = /^\S+ .+\/[A-Z]{4} \S+$/;
+import { BOT_NICK_REGEX } from '../constants/mbti';
 
 export async function handleMessageCreate(message: Message) {
   if (message.author.bot || !message.guild || !message.member) return;
