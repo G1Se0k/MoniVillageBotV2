@@ -53,4 +53,6 @@ client.on('interactionCreate', async (interaction) => {
 client.on('messageCreate', handleMessageCreate);
 client.on('voiceStateUpdate', handleVoiceStateUpdate);
 
-client.login(process.env.TOKEN);
+(async () => {
+  await client.login(process.env.TOKEN);
+})();
