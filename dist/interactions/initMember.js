@@ -10,37 +10,48 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.initMember = initMember;
-const MV_GUILD_1 = require("../database/models/MV_GUILD");
-const MV_USER_1 = require("../database/models/MV_USER");
-const MV_ROLE_1 = require("../database/models/MV_ROLE");
+const Guild_1 = require("../database/models/Guild");
+const Member_1 = require("../database/models/Member");
+const Role_1 = require("../database/models/Role");
 const mbtiInteraction_1 = require("./mbtiInteraction");
 function initMember(member) {
     return __awaiter(this, void 0, void 0, function* () {
         const { guild, user } = member;
+        let userRecord;
+        let mbtiGroupRoles;
         try {
-            yield MV_GUILD_1.MV_GUILD.findOrCreate({ where: { GUILD_ID: guild.id } });
-            yield MV_USER_1.MV_USER.findOrCreate({
-                where: { USER_ID: user.id, GUILD_ID: guild.id },
-                defaults: { USER_ID: user.id, GUILD_ID: guild.id, MBTI_TYPE: 'NONE' },
-            });
-            console.log(`[INIT] DB record created for ${user.id} in guild ${guild.id}`);
+            yield Guild_1.Guild.findOrCreate({ where: { id: guild.id } });
+            [[userRecord], mbtiGroupRoles] = yield Promise.all([
+                Member_1.Member.findOrCreate({
+                    where: { user_id: user.id, guild_id: guild.id },
+                    defaults: { user_id: user.id, guild_id: guild.id, mbti_type: 'NONE' },
+                }),
+                (0, Role_1.findMbtiGroupRoles)(guild.id),
+            ]);
+            console.log(`[INIT] DB record ensured for ${user.id} in guild ${guild.id}`);
         }
         catch (err) {
             console.error(`[INIT] DB record creation failed for ${user.id} in guild ${guild.id}:`, err);
             return;
         }
+        const mbtiType = userRecord.mbti_type;
+        const prefix = (mbtiType === 'NONE' ? 'NO' : mbtiType.substring(0, 2));
+        const targetRole = mbtiGroupRoles.find((r) => r.name.startsWith(prefix));
         try {
-            const mbtiGroupRoles = yield (0, MV_ROLE_1.findMbtiGroupRoles)(guild.id);
-            const noRole = mbtiGroupRoles.find((r) => r.ROLE_NAME.startsWith('NO'));
-            if (noRole) {
-                yield member.roles.add(noRole.ROLE_ID);
-                console.log(`[INIT] Role "${noRole.ROLE_NAME}" assigned to ${user.id} in guild ${guild.id}`);
+            if (targetRole && !member.roles.cache.has(targetRole.role_id)) {
+                yield member.roles.add(targetRole.role_id);
+                console.log(`[INIT] Role "${targetRole.name}" assigned to ${user.id} in guild ${guild.id}`);
             }
         }
         catch (err) {
             console.error(`[INIT] Role assignment failed for ${user.id} in guild ${guild.id}:`, err);
         }
-        const newNick = (0, mbtiInteraction_1.resolveNewNickname)(member.nickname, member.displayName, 'BABO', 'NO');
+        if (guild.ownerId === user.id) {
+            console.log(`[INIT] Skipped nickname change for guild owner ${user.id} in guild ${guild.id}`);
+            return;
+        }
+        const displayType = (0, mbtiInteraction_1.resolveDisplayType)(member.nickname, member.displayName, mbtiType);
+        const newNick = (0, mbtiInteraction_1.resolveNewNickname)(member.nickname, member.displayName, displayType, prefix);
         try {
             yield member.setNickname(newNick);
             console.log(`[INIT] Nickname set to "${newNick}" for ${user.id} in guild ${guild.id}`);

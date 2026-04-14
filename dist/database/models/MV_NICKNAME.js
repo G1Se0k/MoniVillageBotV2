@@ -34,4 +34,7 @@ MV_NICKNAME.init({
     tableName: 'MV_NICKNAME',
     freezeTableName: true,
     timestamps: false,
+    indexes: [
+        { name: 'idx_nick_user_guild_at', fields: ['USER_ID', 'GUILD_ID', 'CHANGED_AT'] },
+    ],
 });

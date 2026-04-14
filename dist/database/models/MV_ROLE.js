@@ -11,6 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MV_ROLE = void 0;
 exports.findMbtiGroupRoles = findMbtiGroupRoles;
+exports.invalidateMbtiRoleCache = invalidateMbtiRoleCache;
 exports.registerRoleToDb = registerRoleToDb;
 const sequelize_1 = require("sequelize");
 const sequelize_2 = require("../sequelize");
@@ -36,10 +37,20 @@ MV_ROLE.init({
     tableName: 'MV_ROLE',
     freezeTableName: true,
     timestamps: false,
+    indexes: [
+        { name: 'idx_role_guild', fields: ['GUILD_ID'] },
+        { name: 'idx_role_guild_name', fields: ['GUILD_ID', 'ROLE_NAME'] },
+    ],
 });
+// In-memory cache for MBTI group roles per guild (TTL: 5 minutes)
+const ROLE_CACHE_TTL = 5 * 60 * 1000;
+const mbtiRoleCache = new Map();
 function findMbtiGroupRoles(guildId) {
     return __awaiter(this, void 0, void 0, function* () {
-        return MV_ROLE.findAll({
+        const cached = mbtiRoleCache.get(guildId);
+        if (cached && cached.expiresAt > Date.now())
+            return cached.roles;
+        const roles = yield MV_ROLE.findAll({
             where: {
                 GUILD_ID: guildId,
                 [sequelize_1.Op.or]: mbti_1.MBTI_ROLE_PREFIXES.map((prefix) => ({
@@ -47,7 +58,12 @@ function findMbtiGroupRoles(guildId) {
                 })),
             },
         });
+        mbtiRoleCache.set(guildId, { roles, expiresAt: Date.now() + ROLE_CACHE_TTL });
+        return roles;
     });
+}
+function invalidateMbtiRoleCache(guildId) {
+    mbtiRoleCache.delete(guildId);
 }
 function registerRoleToDb(roleId, guildId, roleName) {
     return __awaiter(this, void 0, void 0, function* () {

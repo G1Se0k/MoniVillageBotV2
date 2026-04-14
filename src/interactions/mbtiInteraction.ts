@@ -1,20 +1,22 @@
-import { StringSelectMenuInteraction } from 'discord.js';
-import { MV_MBTI } from '../database/models/MV_MBTI';
-import { MV_USER } from '../database/models/MV_USER';
-import { findMbtiGroupRoles, MbtiRolePrefix } from '../database/models/MV_ROLE';
-import { MBTI_TYPES } from '../constants/mbti';
+import { EmbedBuilder, StringSelectMenuInteraction } from 'discord.js';
+import { EMBED_COLORS } from '../utils/embed';
+import { MbtiLog } from '../database/models/MbtiLog';
+import { Member } from '../database/models/Member';
+import { findMbtiGroupRoles, MbtiRolePrefix } from '../database/models/Role';
+import { GROUP_EMOJIS, MBTI_TYPE_SET, NICK_TYPE_REGEX } from '../constants/mbti';
 
-const MBTI_TYPE_SET = new Set<string>([...MBTI_TYPES, 'BABO']);
+const OUR_EMOJI_SET = new Set(Object.values(GROUP_EMOJIS));
 
-const MBTI_GROUP_EMOJIS: Record<MbtiRolePrefix, string> = {
-  IS: '🟩',
-  IN: '🟦',
-  ES: '🟥',
-  EN: '🟧',
-  NO: '⬛',
-};
-
-const OUR_EMOJI_SET = new Set(Object.values(MBTI_GROUP_EMOJIS));
+/**
+ * 닉네임에서 커스텀 4글자 타입을 보존하거나, mbtiType 기반으로 표시 타입을 결정합니다.
+ * 커스텀 타입(MBTI/BABO가 아닌 4글자 영어)이 있으면 그대로 유지합니다.
+ */
+export function resolveDisplayType(nickname: string | null, displayName: string, mbtiType: string): string {
+  const source = nickname ?? displayName;
+  const currentType = NICK_TYPE_REGEX.exec(source)?.[1];
+  if (currentType && !MBTI_TYPE_SET.has(currentType)) return currentType;
+  return mbtiType === 'NONE' ? 'BABO' : mbtiType;
+}
 
 export function resolveNewNickname(
   currentNick: string | null,
@@ -28,7 +30,7 @@ export function resolveNewNickname(
   // Use the first non-MBTI emoji found; fall back to MBTI group emoji
   const foundEmojis = [...source.matchAll(/\p{Emoji_Presentation}/gu)].map((m) => m[0]);
   const otherEmoji = foundEmojis.find((e) => !OUR_EMOJI_SET.has(e));
-  const emoji = otherEmoji ?? MBTI_GROUP_EMOJIS[prefix];
+  const emoji = otherEmoji ?? GROUP_EMOJIS[prefix];
 
   // overrideName이 있으면 직접 사용, 없으면 source에서 이름 추출
   let baseName: string;
@@ -49,13 +51,13 @@ export async function handleMbtiSelect(interaction: StringSelectMenuInteraction)
 
   const selectedType = interaction.values[0];
 
-  const userRecord = await MV_USER.findOne({ where: { USER_ID: user.id, GUILD_ID: guild.id } });
+  const userRecord = await Member.findOne({ where: { user_id: user.id, guild_id: guild.id } });
 
-  if (userRecord?.MBTI_TYPE === selectedType) {
-    await interaction.update({
-      content: `이미 **${selectedType}**(으)로 선택되어 있습니다.`,
-      components: [],
-    });
+  if (userRecord?.mbti_type === selectedType) {
+    const embed = new EmbedBuilder()
+      .setColor(EMBED_COLORS.warning)
+      .setDescription(`이미 **${selectedType}**(으)로 선택되어 있습니다.`);
+    await interaction.update({ embeds: [embed], components: [] });
     return;
   }
 
@@ -63,38 +65,31 @@ export async function handleMbtiSelect(interaction: StringSelectMenuInteraction)
 
   const [mbtiGroupRoles] = await Promise.all([
     findMbtiGroupRoles(guild.id),
-    MV_MBTI.create({ USER_ID: user.id, GUILD_ID: guild.id, MBTI_TYPE: selectedType }),
-    MV_USER.upsert({ USER_ID: user.id, GUILD_ID: guild.id, MBTI_TYPE: selectedType }),
+    MbtiLog.create({ user_id: user.id, guild_id: guild.id, mbti_type: selectedType }),
+    Member.upsert({ user_id: user.id, guild_id: guild.id, mbti_type: selectedType }),
   ]);
 
-  const matchingRole = mbtiGroupRoles.find((r) => r.ROLE_NAME.startsWith(prefix));
+  const matchingRole = mbtiGroupRoles.find((r) => r.name.startsWith(prefix));
 
   const isOwner = guild.ownerId === user.id;
 
   let roleAssigned = false;
   try {
     const member = await guild.members.fetch(user.id);
-    const staleRoleIds = mbtiGroupRoles.map((r) => r.ROLE_ID).filter((id) => member.roles.cache.has(id));
+    const staleRoleIds = mbtiGroupRoles.map((r) => r.role_id).filter((id) => member.roles.cache.has(id));
 
-    // 현재 닉네임에 MBTI 대신 커스텀 4글자 영어가 설정된 경우 해당 타입 유지
-    const currentNickSource = member.nickname ?? member.displayName;
-    const typeMatch = currentNickSource.match(/\/([A-Z]{4})\s/);
-    const currentType = typeMatch?.[1];
-    const displayType =
-      currentType && !MBTI_TYPE_SET.has(currentType)
-        ? currentType
-        : selectedType === 'NONE' ? 'BABO' : selectedType;
+    const displayType = resolveDisplayType(member.nickname, member.displayName, selectedType);
     const newNick = resolveNewNickname(member.nickname, member.displayName, displayType, prefix);
 
     await Promise.all([
       ...(staleRoleIds.length > 0 ? [member.roles.remove(staleRoleIds)] : []),
-      ...(matchingRole ? [member.roles.add(matchingRole.ROLE_ID)] : []),
+      ...(matchingRole ? [member.roles.add(matchingRole.role_id)] : []),
       ...(!isOwner ? [member.setNickname(newNick)] : []),
     ]);
 
     if (matchingRole) {
       roleAssigned = true;
-      console.log(`[MBTI] Assigned role "${matchingRole.ROLE_NAME}" to ${user.tag} (${user.id}) in guild ${guild.id}`);
+      console.log(`[MBTI] Assigned role "${matchingRole.name}" to ${user.tag} (${user.id}) in guild ${guild.id}`);
     }
     if (!isOwner) {
       console.log(`[MBTI] Nickname updated to "${newNick}" for ${user.tag} (${user.id}) in guild ${guild.id}`);
@@ -105,12 +100,15 @@ export async function handleMbtiSelect(interaction: StringSelectMenuInteraction)
 
   console.log(`[MBTI] ${user.tag} (${user.id}) selected ${selectedType} in guild ${guild.id}`);
 
-  const ownerNotice = isOwner
-    ? '\n\n⚠️ 서버 소유자는 봇이 닉네임을 변경할 수 없습니다. 닉네임은 직접 변경해주세요.'
-    : '';
+  const groupColor = EMBED_COLORS[prefix as keyof typeof EMBED_COLORS] ?? EMBED_COLORS.success;
 
-  await interaction.update({
-    content: `✅ MBTI 유형이 **${selectedType}**(으)로 저장되었습니다!${roleAssigned && matchingRole ? ` **${matchingRole.ROLE_NAME}** 역할이 부여되었습니다.` : ''}${ownerNotice}`,
-    components: [],
-  });
+  const desc = [`✅ MBTI 유형이 **${selectedType}**(으)로 저장되었습니다!`];
+  if (roleAssigned && matchingRole) desc.push(`**${matchingRole.name}** 역할이 부여되었습니다.`);
+  if (isOwner) desc.push('\n⚠️ 서버 소유자는 닉네임을 직접 변경해주세요.');
+
+  const embed = new EmbedBuilder()
+    .setColor(groupColor as number)
+    .setDescription(desc.join('\n'));
+
+  await interaction.update({ embeds: [embed], components: [] });
 }

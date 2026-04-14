@@ -11,7 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handleVoiceStateUpdate = handleVoiceStateUpdate;
 const initMember_1 = require("./initMember");
-const BOT_NICK_REGEX = /^\S+ .+\/[A-Z]{4} \S+$/;
+const mbti_1 = require("../constants/mbti");
 function handleVoiceStateUpdate(oldState, newState) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a;
@@ -19,7 +19,7 @@ function handleVoiceStateUpdate(oldState, newState) {
             return;
         if (newState.member.user.bot)
             return;
-        if (BOT_NICK_REGEX.test((_a = newState.member.nickname) !== null && _a !== void 0 ? _a : ''))
+        if (mbti_1.BOT_NICK_REGEX.test((_a = newState.member.nickname) !== null && _a !== void 0 ? _a : ''))
             return;
         try {
             yield (0, initMember_1.initMember)(newState.member);

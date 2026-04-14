@@ -2,16 +2,20 @@ import {
   ActionRowBuilder,
   ChatInputCommandInteraction,
   Collection,
+  EmbedBuilder,
   Guild,
+  MessageFlags,
   Role,
   SlashCommandBuilder,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
 } from 'discord.js';
 import { SlashCommand } from '../types/slashCommand';
-import { MV_MBTI } from '../database/models/MV_MBTI';
-import { MV_ROLE, findMbtiGroupRoles, registerRoleToDb } from '../database/models/MV_ROLE';
-import { MBTI_TYPES, MBTI_ROLE_PREFIXES, MbtiRolePrefix, CUSTOM_IDS } from '../constants/mbti';
+import { MbtiLog } from '../database/models/MbtiLog';
+import { Role as DbRole, findMbtiGroupRoles, registerRoleToDb } from '../database/models/Role';
+import { Member } from '../database/models/Member';
+import { MBTI_TYPES, MBTI_ROLE_PREFIXES, MbtiRolePrefix, CUSTOM_IDS, GROUP_EMOJIS } from '../constants/mbti';
+import { infoEmbed, warnEmbed, EMBED_COLORS } from '../utils/embed';
 
 // Built once at module load — reused for every /mbti 설정 call
 const SELECT_MENU_ROW = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
@@ -21,28 +25,20 @@ const SELECT_MENU_ROW = new ActionRowBuilder<StringSelectMenuBuilder>().addCompo
     .addOptions(MBTI_TYPES.map((type) => new StringSelectMenuOptionBuilder().setLabel(type).setValue(type))),
 );
 
-const MBTI_GROUP_COLORS: Record<MbtiRolePrefix, number> = {
-  IS: 0x1f8b4c, // lime
-  IN: 0x3498db, // skyblue
-  EN: 0xe67e22, // orange
-  ES: 0xe91e63, // red
-  NO: 0x546e7a, // black
-};
-
 export type SyncStatus = 'db' | 'registered' | 'created' | 'recreated';
 
 export async function syncMbtiGroupRole(
   guild: Guild,
   prefix: MbtiRolePrefix,
-  dbRoles: MV_ROLE[],
+  dbRoles: DbRole[],
   discordRoles: Collection<string, Role>,
 ): Promise<SyncStatus> {
-  const dbRole = dbRoles.find((r) => r.ROLE_NAME.startsWith(prefix));
+  const dbRole = dbRoles.find((r) => r.name.startsWith(prefix));
   const discordRole = discordRoles.find((r) => r.name.startsWith(prefix));
 
   const boostRole = discordRoles.find((r) => r.tags?.premiumSubscriberRole === null);
   const boostPosition = boostRole ? boostRole.position : 0;
-  const color = MBTI_GROUP_COLORS[prefix];
+  const color = EMBED_COLORS[prefix];
   const roleOptions = {
     name: prefix,
     color,
@@ -83,7 +79,8 @@ export const mbti: SlashCommand = {
     .setName('mbti')
     .setDescription('MBTI 유형을 관리합니다.')
     .addSubcommand((sub) => sub.setName('설정').setDescription('나의 MBTI 유형을 선택합니다.'))
-    .addSubcommand((sub) => sub.setName('히스토리').setDescription('나의 MBTI 선택 히스토리를 조회합니다.')),
+    .addSubcommand((sub) => sub.setName('히스토리').setDescription('나의 MBTI 선택 히스토리를 조회합니다.'))
+    .addSubcommand((sub) => sub.setName('서버통계').setDescription('서버의 MBTI 유형 분포를 조회합니다.')),
   handlesDeferral: true,
   execute: async (_, interaction: ChatInputCommandInteraction) => {
     const { guild, user } = interaction;
@@ -92,37 +89,86 @@ export const mbti: SlashCommand = {
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === '설정') {
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       await interaction.editReply({ content: '아래에서 나의 MBTI 유형을 선택하세요:', components: [SELECT_MENU_ROW] });
       return;
     }
 
     if (subcommand === '히스토리') {
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-      const history = await MV_MBTI.findAll({
-        where: { USER_ID: user.id, GUILD_ID: guild.id },
-        order: [['SELECTED_AT', 'DESC']],
+      const history = await MbtiLog.findAll({
+        where: { user_id: user.id, guild_id: guild.id },
+        order: [['created_at', 'DESC']],
         limit: 10,
       });
 
-      console.log(`[MBTI] History viewed by ${user.tag} (${user.id}) in guild ${guild.id}:`);
-
       if (history.length === 0) {
-        console.log('  (no history)');
-        await interaction.editReply({ content: '아직 MBTI를 선택한 기록이 없습니다.' });
+        await interaction.editReply({ embeds: [warnEmbed('아직 MBTI를 선택한 기록이 없습니다.')] });
         return;
       }
 
-      history.forEach((h, i) => {
-        console.log(`  ${i + 1}. ${h.MBTI_TYPE} - ${new Date(h.SELECTED_AT).toLocaleString('ko-KR')}`);
-      });
-
       const list = history
-        .map((h, i) => `${i + 1}. **${h.MBTI_TYPE}** — ${new Date(h.SELECTED_AT).toLocaleString('ko-KR')}`)
+        .map((h, i) => `${i + 1}. **${h.mbti_type}** — ${new Date(h.created_at).toLocaleString('ko-KR')}`)
         .join('\n');
 
-      await interaction.editReply({ content: `**${user.displayName}의 MBTI 히스토리**\n${list}` });
+      const embed = infoEmbed(`${user.displayName}의 MBTI 히스토리`, list);
+      await interaction.editReply({ embeds: [embed] });
+      console.log(`[MBTI] History viewed by ${user.tag} (${user.id}) in guild ${guild.id}`);
+      return;
+    }
+
+    if (subcommand === '서버통계') {
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+      const users = await Member.findAll({ where: { guild_id: guild.id } });
+
+      const total = users.length;
+      if (total === 0) {
+        await interaction.editReply({ embeds: [warnEmbed('등록된 유저가 없습니다.')] });
+        return;
+      }
+
+      // MBTI 그룹별 카운트
+      const groupCount: Record<string, number> = { IS: 0, IN: 0, ES: 0, EN: 0, NO: 0 };
+      const typeCount: Record<string, number> = {};
+
+      for (const u of users) {
+        const type = u.mbti_type;
+        const group = type === 'NONE' ? 'NO' : type.substring(0, 2);
+        groupCount[group] = (groupCount[group] ?? 0) + 1;
+        typeCount[type] = (typeCount[type] ?? 0) + 1;
+      }
+
+      const groupLines = MBTI_ROLE_PREFIXES.map((prefix) => {
+        const count = groupCount[prefix] ?? 0;
+        const pct = ((count / total) * 100).toFixed(1);
+        const bar = '█'.repeat(Math.round((count / total) * 10)).padEnd(10, '░');
+        return `${GROUP_EMOJIS[prefix]} **${prefix}** ${bar} ${count}명 (${pct}%)`;
+      });
+
+      const sortedTypes = Object.entries(typeCount)
+        .filter(([t]) => t !== 'NONE')
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([t, c]) => `**${t}** ${c}명`)
+        .join(' · ');
+
+      const noneCount = typeCount['NONE'] ?? 0;
+
+      const embed = new EmbedBuilder()
+        .setColor(EMBED_COLORS.primary)
+        .setTitle('서버 MBTI 분포')
+        .setDescription(groupLines.join('\n'))
+        .addFields({ name: '미설정', value: `${noneCount}명`, inline: true })
+        .setFooter({ text: `총 ${total}명` });
+
+      if (sortedTypes) {
+        embed.addFields({ name: 'Top 5 유형', value: sortedTypes, inline: false });
+      }
+
+      await interaction.editReply({ embeds: [embed] });
+      console.log(`[MBTI] Server stats viewed by ${user.tag} (${user.id}) in guild ${guild.id}`);
     }
   },
 };

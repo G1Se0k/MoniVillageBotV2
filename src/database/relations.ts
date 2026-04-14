@@ -1,8 +1,6 @@
-import { MV_GUILD } from './models/MV_GUILD';
-import { MV_USER } from './models/MV_USER';
-import { MV_ROLE } from './models/MV_ROLE';
-import { MV_MBTI } from './models/MV_MBTI';
-import { MV_NICKNAME } from './models/MV_NICKNAME';
+import { Guild } from './models/Guild';
+import { Member } from './models/Member';
+import { Role } from './models/Role';
 
 let initialized = false;
 
@@ -10,15 +8,14 @@ export const initRelations = () => {
   if (initialized) return;
   initialized = true;
 
-  MV_GUILD.hasMany(MV_USER, { foreignKey: 'GUILD_ID', sourceKey: 'GUILD_ID', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
-  MV_USER.belongsTo(MV_GUILD, { foreignKey: 'GUILD_ID', targetKey: 'GUILD_ID' });
+  // guilds → members (guild 삭제 시 소속 멤버 전체 삭제)
+  Guild.hasMany(Member, { foreignKey: 'guild_id', sourceKey: 'id', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+  Member.belongsTo(Guild, { foreignKey: 'guild_id', targetKey: 'id' });
 
-  MV_GUILD.hasMany(MV_ROLE, { foreignKey: 'GUILD_ID', sourceKey: 'GUILD_ID', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
-  MV_ROLE.belongsTo(MV_GUILD, { foreignKey: 'GUILD_ID', targetKey: 'GUILD_ID' });
+  // guilds → roles (guild 삭제 시 소속 역할 전체 삭제)
+  Guild.hasMany(Role, { foreignKey: 'guild_id', sourceKey: 'id', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+  Role.belongsTo(Guild, { foreignKey: 'guild_id', targetKey: 'id' });
 
-  MV_GUILD.hasMany(MV_MBTI, { foreignKey: 'GUILD_ID', sourceKey: 'GUILD_ID', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
-  MV_MBTI.belongsTo(MV_GUILD, { foreignKey: 'GUILD_ID', targetKey: 'GUILD_ID' });
-
-  MV_GUILD.hasMany(MV_NICKNAME, { foreignKey: 'GUILD_ID', sourceKey: 'GUILD_ID', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
-  MV_NICKNAME.belongsTo(MV_GUILD, { foreignKey: 'GUILD_ID', targetKey: 'GUILD_ID' });
+  // mbti_logs, nickname_logs는 members의 복합 PK(user_id, guild_id)를 참조해야 하나
+  // Sequelize가 복합 FK를 지원하지 않아 연관관계 대신 인덱스로 처리
 };

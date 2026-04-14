@@ -1,18 +1,18 @@
 import 'dotenv/config';
-import { Client, GatewayIntentBits } from 'discord.js';
+import { Client, GatewayIntentBits, MessageFlags } from 'discord.js';
 import commands from './commands';
 import { connectDatabase } from './database/database';
 import { handleMbtiSelect } from './interactions/mbtiInteraction';
 import { handleNicknameModal } from './interactions/nicknameModalHandler';
-import { handleMessageCreate } from './interactions/messageCreateHandler';
-import { handleVoiceStateUpdate } from './interactions/voiceStateUpdateHandler';
+import { handleGuildMemberAdd } from './interactions/guildMemberAddHandler';
+import { handleRoleDelete } from './interactions/roleDeleteHandler';
 import { CUSTOM_IDS } from './constants/mbti';
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.GuildVoiceStates,
   ],
 });
 
@@ -32,7 +32,7 @@ client.on('interactionCreate', async (interaction) => {
     if (!command) return;
 
     if (!command.handlesDeferral) {
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     }
     await command.execute(client, interaction);
     console.log(`Command executed: ${command.data.name}`);
@@ -50,8 +50,8 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
-client.on('messageCreate', handleMessageCreate);
-client.on('voiceStateUpdate', handleVoiceStateUpdate);
+client.on('guildMemberAdd', handleGuildMemberAdd);
+client.on('roleDelete', handleRoleDelete);
 
 (async () => {
   await client.login(process.env.TOKEN);

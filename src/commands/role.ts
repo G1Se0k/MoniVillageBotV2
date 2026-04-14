@@ -1,6 +1,7 @@
 import { PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
+import { infoEmbed, successEmbed } from '../utils/embed';
 import { SlashCommand } from '../types/slashCommand';
-import { MV_ROLE, invalidateMbtiRoleCache } from '../database/models/MV_ROLE';
+import { Role, invalidateMbtiRoleCache } from '../database/models/Role';
 import { SyncStatus, syncMbtiGroupRole, findMbtiGroupRoles, MBTI_ROLE_PREFIXES, MbtiRolePrefix } from './mbti';
 
 export const role: SlashCommand = {
@@ -23,38 +24,38 @@ export const role: SlashCommand = {
       const fetchedRoles = await guild.roles.fetch();
       const toCreate = fetchedRoles
         .filter((r) => r.name !== '@everyone')
-        .map((r) => ({ ROLE_ID: r.id, GUILD_ID: guild.id, ROLE_NAME: r.name }));
+        .map((r) => ({ role_id: r.id, guild_id: guild.id, name: r.name }));
 
       const existingIds = new Set(
-        (await MV_ROLE.findAll({ where: { ROLE_ID: toCreate.map((r) => r.ROLE_ID) }, attributes: ['ROLE_ID'] }))
-          .map((r) => r.ROLE_ID),
+        (await Role.findAll({ where: { role_id: toCreate.map((r) => r.role_id) }, attributes: ['role_id'] }))
+          .map((r) => r.role_id),
       );
 
-      const newRoles = toCreate.filter((r) => !existingIds.has(r.ROLE_ID));
+      const newRoles = toCreate.filter((r) => !existingIds.has(r.role_id));
       if (newRoles.length > 0) {
-        await MV_ROLE.bulkCreate(newRoles, { ignoreDuplicates: true });
+        await Role.bulkCreate(newRoles, { ignoreDuplicates: true });
       }
 
       const registered = newRoles.length;
       const skipped = toCreate.length - registered;
 
       await interaction.editReply({
-        content: `역할 등록 완료!\n새로 등록: **${registered}개** | 이미 존재: **${skipped}개**`,
+        embeds: [successEmbed(`역할 등록 완료!\n새로 등록: **${registered}개** | 이미 존재: **${skipped}개**`)],
       });
       console.log(`Guild ${guild.id}: roles registered=${registered}, skipped=${skipped}`);
       return;
     }
 
     if (subcommand === '목록') {
-      const roles = await MV_ROLE.findAll({ where: { GUILD_ID: guild.id } });
+      const roles = await Role.findAll({ where: { guild_id: guild.id } });
 
       if (roles.length === 0) {
-        await interaction.editReply({ content: '등록된 역할이 없습니다.' });
+        await interaction.editReply({ embeds: [infoEmbed('등록된 역할 목록', '등록된 역할이 없습니다.')] });
         return;
       }
 
-      const list = roles.map((r) => `• ${r.ROLE_NAME} (\`${r.ROLE_ID}\`)`).join('\n');
-      await interaction.editReply({ content: `**등록된 역할 목록**\n${list}` });
+      const list = roles.map((r) => `• ${r.name} (\`${r.role_id}\`)`).join('\n');
+      await interaction.editReply({ embeds: [infoEmbed('등록된 역할 목록', list)] });
       return;
     }
 
@@ -81,7 +82,7 @@ export const role: SlashCommand = {
       if (results.created.length > 0) lines.push(`새로 생성: **${results.created.join(', ')}**`);
       if (results.recreated.length > 0) lines.push(`DB 삭제 후 재생성: **${results.recreated.join(', ')}**`);
 
-      await interaction.editReply({ content: `MBTI 그룹 역할 처리 완료!\n${lines.join('\n')}` });
+      await interaction.editReply({ embeds: [successEmbed(`MBTI 그룹 역할 처리 완료!\n${lines.join('\n')}`)] });
       console.log(
         `Guild ${guild.id}: MBTI group roles — db=[${results.db.join(', ')}], registered=[${results.registered.join(', ')}], created=[${results.created.join(', ')}], recreated=[${results.recreated.join(', ')}]`,
       );

@@ -11,8 +11,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.role = void 0;
 const discord_js_1 = require("discord.js");
-const MV_GUILD_1 = require("../database/models/MV_GUILD");
-const MV_ROLE_1 = require("../database/models/MV_ROLE");
+const embed_1 = require("../utils/embed");
+const Role_1 = require("../database/models/Role");
 const mbti_1 = require("./mbti");
 exports.role = {
     data: new discord_js_1.SlashCommandBuilder()
@@ -28,51 +28,43 @@ exports.role = {
             return;
         const subcommand = interaction.options.getSubcommand();
         if (subcommand === '등록') {
-            yield MV_GUILD_1.MV_GUILD.findOrCreate({ where: { GUILD_ID: guild.id } });
             const fetchedRoles = yield guild.roles.fetch();
-            const guildRoles = fetchedRoles.filter((r) => r.name !== '@everyone');
-            let registered = 0;
-            let skipped = 0;
-            const failed = [];
-            for (const [, guildRole] of guildRoles) {
-                try {
-                    const [, created] = yield MV_ROLE_1.MV_ROLE.findOrCreate({
-                        where: { ROLE_ID: guildRole.id },
-                        defaults: { ROLE_ID: guildRole.id, GUILD_ID: guild.id, ROLE_NAME: guildRole.name },
-                    });
-                    created ? registered++ : skipped++;
-                }
-                catch (err) {
-                    console.error(`역할 등록 실패 [${guildRole.name}]:`, err);
-                    failed.push(guildRole.name);
-                }
+            const toCreate = fetchedRoles
+                .filter((r) => r.name !== '@everyone')
+                .map((r) => ({ role_id: r.id, guild_id: guild.id, name: r.name }));
+            const existingIds = new Set((yield Role_1.Role.findAll({ where: { role_id: toCreate.map((r) => r.role_id) }, attributes: ['role_id'] }))
+                .map((r) => r.role_id));
+            const newRoles = toCreate.filter((r) => !existingIds.has(r.role_id));
+            if (newRoles.length > 0) {
+                yield Role_1.Role.bulkCreate(newRoles, { ignoreDuplicates: true });
             }
-            const failedMsg = failed.length > 0 ? `\n실패: **${failed.length}개** (${failed.join(', ')})` : '';
+            const registered = newRoles.length;
+            const skipped = toCreate.length - registered;
             yield interaction.editReply({
-                content: `역할 등록 완료!\n새로 등록: **${registered}개** | 이미 존재: **${skipped}개**${failedMsg}`,
+                embeds: [(0, embed_1.successEmbed)(`역할 등록 완료!\n새로 등록: **${registered}개** | 이미 존재: **${skipped}개**`)],
             });
-            console.log(`Guild ${guild.id}: roles registered=${registered}, skipped=${skipped}, failed=${failed.length}`);
+            console.log(`Guild ${guild.id}: roles registered=${registered}, skipped=${skipped}`);
             return;
         }
         if (subcommand === '목록') {
-            const roles = yield MV_ROLE_1.MV_ROLE.findAll({ where: { GUILD_ID: guild.id } });
+            const roles = yield Role_1.Role.findAll({ where: { guild_id: guild.id } });
             if (roles.length === 0) {
-                yield interaction.editReply({ content: '등록된 역할이 없습니다.' });
+                yield interaction.editReply({ embeds: [(0, embed_1.infoEmbed)('등록된 역할 목록', '등록된 역할이 없습니다.')] });
                 return;
             }
-            const list = roles.map((r) => `• ${r.ROLE_NAME} (\`${r.ROLE_ID}\`)`).join('\n');
-            yield interaction.editReply({ content: `**등록된 역할 목록**\n${list}` });
+            const list = roles.map((r) => `• ${r.name} (\`${r.role_id}\`)`).join('\n');
+            yield interaction.editReply({ embeds: [(0, embed_1.infoEmbed)('등록된 역할 목록', list)] });
             return;
         }
         if (subcommand === 'mbti그룹') {
-            yield MV_GUILD_1.MV_GUILD.findOrCreate({ where: { GUILD_ID: guild.id } });
             const [dbRoles, fetchedRoles] = yield Promise.all([(0, mbti_1.findMbtiGroupRoles)(guild.id), guild.roles.fetch()]);
             const discordRoles = fetchedRoles.filter((r) => r.name !== '@everyone');
             const results = { db: [], registered: [], created: [], recreated: [] };
-            for (const prefix of mbti_1.MBTI_ROLE_PREFIXES) {
-                const status = yield (0, mbti_1.syncMbtiGroupRole)(guild, prefix, dbRoles, discordRoles);
+            const syncResults = yield Promise.all(mbti_1.MBTI_ROLE_PREFIXES.map((prefix) => (0, mbti_1.syncMbtiGroupRole)(guild, prefix, dbRoles, discordRoles).then((status) => ({ prefix, status }))));
+            for (const { prefix, status } of syncResults) {
                 results[status].push(prefix);
             }
+            (0, Role_1.invalidateMbtiRoleCache)(guild.id);
             const lines = [];
             if (results.db.length > 0)
                 lines.push(`이미 DB 등록: **${results.db.join(', ')}**`);
@@ -82,7 +74,7 @@ exports.role = {
                 lines.push(`새로 생성: **${results.created.join(', ')}**`);
             if (results.recreated.length > 0)
                 lines.push(`DB 삭제 후 재생성: **${results.recreated.join(', ')}**`);
-            yield interaction.editReply({ content: `MBTI 그룹 역할 처리 완료!\n${lines.join('\n')}` });
+            yield interaction.editReply({ embeds: [(0, embed_1.successEmbed)(`MBTI 그룹 역할 처리 완료!\n${lines.join('\n')}`)] });
             console.log(`Guild ${guild.id}: MBTI group roles — db=[${results.db.join(', ')}], registered=[${results.registered.join(', ')}], created=[${results.created.join(', ')}], recreated=[${results.recreated.join(', ')}]`);
         }
     }),

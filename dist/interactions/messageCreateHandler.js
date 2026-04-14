@@ -11,13 +11,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handleMessageCreate = handleMessageCreate;
 const initMember_1 = require("./initMember");
-const BOT_NICK_REGEX = /^\S+ .+\/[A-Z]{4} \S+$/;
+const mbti_1 = require("../constants/mbti");
 function handleMessageCreate(message) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a;
         if (message.author.bot || !message.guild || !message.member)
             return;
-        if (BOT_NICK_REGEX.test((_a = message.member.nickname) !== null && _a !== void 0 ? _a : ''))
+        if (mbti_1.BOT_NICK_REGEX.test((_a = message.member.nickname) !== null && _a !== void 0 ? _a : ''))
             return;
         try {
             yield (0, initMember_1.initMember)(message.member);
