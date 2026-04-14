@@ -140,10 +140,14 @@ export const mbti: SlashCommand = {
         typeCount[type] = (typeCount[type] ?? 0) + 1;
       }
 
+      const BAR_WIDTH = 20;
+      const maxCount = Math.max(...MBTI_ROLE_PREFIXES.map((p) => groupCount[p] ?? 0), 1);
+
       const groupLines = MBTI_ROLE_PREFIXES.map((prefix) => {
         const count = groupCount[prefix] ?? 0;
         const pct = ((count / total) * 100).toFixed(1);
-        const bar = '█'.repeat(Math.round((count / total) * 10)).padEnd(10, '░');
+        const filled = Math.round((count / maxCount) * BAR_WIDTH);
+        const bar = `\`${'█'.repeat(filled).padEnd(BAR_WIDTH, '░')}\``;
         return `${GROUP_EMOJIS[prefix]} **${prefix}** ${bar} ${count}명 (${pct}%)`;
       });
 
