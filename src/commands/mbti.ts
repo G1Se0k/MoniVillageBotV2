@@ -148,7 +148,7 @@ export const mbti: SlashCommand = {
         const pct = ((count / total) * 100).toFixed(1);
         const filled = Math.round((count / maxCount) * BAR_WIDTH);
         const bar = `\`${'█'.repeat(filled).padEnd(BAR_WIDTH, '░')}\``;
-        return `${GROUP_EMOJIS[prefix]} **${prefix}** ${bar} ${count}명 (${pct}%)`;
+        return `${GROUP_EMOJIS[prefix]} **${prefix}** ${count}명 (${pct}%)\n${bar}`;
       });
 
       const sortedTypes = Object.entries(typeCount)
