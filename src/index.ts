@@ -35,7 +35,14 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     }
     await command.execute(client, interaction);
-    console.log(`Command executed: ${command.data.name}`);
+
+    const subcommand = interaction.options.getSubcommand(false);
+    const fullCommand = subcommand ? `/${command.data.name} ${subcommand}` : `/${command.data.name}`;
+    const guildName = interaction.guild?.name ?? '알 수 없는 서버';
+    const nickname = interaction.member && 'displayName' in interaction.member
+      ? interaction.member.displayName
+      : interaction.user.username;
+    console.log(`[CMD] ${guildName} | ${nickname} | ${fullCommand}`);
     return;
   }
 
