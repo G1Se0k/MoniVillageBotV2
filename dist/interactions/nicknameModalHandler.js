@@ -14,7 +14,7 @@ const discord_js_1 = require("discord.js");
 const embed_1 = require("../utils/embed");
 const Member_1 = require("../database/models/Member");
 const NicknameLog_1 = require("../database/models/NicknameLog");
-const mbtiInteraction_1 = require("./mbtiInteraction");
+const mbtiUtils_1 = require("./mbtiUtils");
 const mbti_1 = require("../constants/mbti");
 function handleNicknameModal(interaction) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -24,15 +24,19 @@ function handleNicknameModal(interaction) {
             return;
         yield interaction.deferReply({ flags: discord_js_1.MessageFlags.Ephemeral });
         const newName = interaction.fields.getTextInputValue(mbti_1.CUSTOM_IDS.NICKNAME_INPUT);
-        const userRecord = yield Member_1.Member.findOne({ where: { user_id: user.id, guild_id: guild.id } });
+        const [userRecord, member] = yield Promise.all([
+            Member_1.Member.findOne({ where: { user_id: user.id, guild_id: guild.id } }),
+            guild.members.fetch(user.id),
+        ]);
         const mbtiType = (_a = userRecord === null || userRecord === void 0 ? void 0 : userRecord.mbti_type) !== null && _a !== void 0 ? _a : 'NONE';
-        const prefix = (mbtiType === 'NONE' ? 'NO' : mbtiType.substring(0, 2));
-        const member = yield guild.members.fetch(user.id);
-        const displayType = (0, mbtiInteraction_1.resolveDisplayType)(member.nickname, member.displayName, mbtiType);
-        const newNick = (0, mbtiInteraction_1.resolveNewNickname)(member.nickname, member.displayName, displayType, prefix, newName);
+        const prefix = (0, mbtiUtils_1.mbtiTypeToPrefix)(mbtiType);
+        const displayType = (0, mbtiUtils_1.resolveDisplayType)(member.nickname, member.displayName, mbtiType);
+        const newNick = (0, mbtiUtils_1.resolveNewNickname)(member.nickname, member.displayName, displayType, prefix, newName);
         try {
-            yield member.setNickname(newNick);
-            yield NicknameLog_1.NicknameLog.create({ user_id: user.id, guild_id: guild.id, nickname: newNick });
+            yield Promise.all([
+                member.setNickname(newNick),
+                NicknameLog_1.NicknameLog.create({ user_id: user.id, guild_id: guild.id, nickname: newNick }),
+            ]);
             console.log(`[NICK] Nickname changed to "${newNick}" for ${user.id} in guild ${guild.id}`);
             yield interaction.editReply({ embeds: [(0, embed_1.successEmbed)(`닉네임이 **${newNick}**(으)로 변경되었습니다.`)] });
         }
