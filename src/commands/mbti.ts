@@ -19,6 +19,7 @@ import { Role as DbRole, findMbtiGroupRoles, registerRoleToDb } from '../databas
 import { Member } from '../database/models/Member';
 import { MBTI_TYPES, MBTI_ROLE_PREFIXES, MbtiRolePrefix, CUSTOM_IDS, GROUP_EMOJIS } from '../constants/mbti';
 import { infoEmbed, warnEmbed, EMBED_COLORS } from '../utils/embed';
+import { handleCustomMbtiReset } from '../interactions/customMbtiModalHandler';
 
 // Built once at module load — reused for every /mbti 설정 call
 const SELECT_MENU_ROW = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
@@ -83,6 +84,7 @@ export const mbti: SlashCommand = {
     .setDescription('MBTI 유형을 관리합니다.')
     .addSubcommand((sub) => sub.setName('설정').setDescription('나의 MBTI 유형을 선택합니다.'))
     .addSubcommand((sub) => sub.setName('커스텀').setDescription('서버 부스터 전용: 나만의 커스텀 MBTI 유형을 설정합니다.'))
+    .addSubcommand((sub) => sub.setName('커스텀초기화').setDescription('커스텀 MBTI를 초기화하고 이전 표준 MBTI로 되돌립니다.'))
     .addSubcommand((sub) => sub.setName('히스토리').setDescription('나의 MBTI 선택 히스토리를 조회합니다.'))
     .addSubcommand((sub) => sub.setName('서버통계').setDescription('서버의 MBTI 유형 분포를 조회합니다.')),
   handlesDeferral: true,
@@ -123,6 +125,11 @@ export const mbti: SlashCommand = {
 
       modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(input));
       await interaction.showModal(modal);
+      return;
+    }
+
+    if (subcommand === '커스텀초기화') {
+      await handleCustomMbtiReset(interaction);
       return;
     }
 

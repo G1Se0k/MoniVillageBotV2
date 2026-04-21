@@ -1,9 +1,10 @@
-import { EmbedBuilder, ModalSubmitInteraction } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, MessageFlags, ModalSubmitInteraction } from 'discord.js';
+import { Op } from 'sequelize';
 import { EMBED_COLORS } from '../utils/embed';
 import { MbtiLog } from '../database/models/MbtiLog';
 import { Member } from '../database/models/Member';
-import { MBTI_TYPE_SET, CUSTOM_IDS } from '../constants/mbti';
-import { MbtiRolePrefix } from '../database/models/Role';
+import { MBTI_TYPES, MBTI_TYPE_SET, CUSTOM_IDS } from '../constants/mbti';
+import { findMbtiGroupRoles, MbtiRolePrefix } from '../database/models/Role';
 import { resolveNewNickname } from './mbtiInteraction';
 
 export async function handleCustomMbtiModal(interaction: ModalSubmitInteraction) {
@@ -71,6 +72,70 @@ export async function handleCustomMbtiModal(interaction: ModalSubmitInteraction)
 
   const desc = [`✨ 커스텀 MBTI가 **${customType}**(으)로 설정되었습니다!`];
   if (!nickUpdated && !isOwner) desc.push('⚠️ 닉네임 변경에 실패했습니다. 봇의 권한을 확인해주세요.');
+  if (isOwner) desc.push('⚠️ 서버 소유자는 닉네임을 직접 변경해주세요.');
+
+  const embed = new EmbedBuilder()
+    .setColor(EMBED_COLORS.success)
+    .setDescription(desc.join('\n'));
+
+  await interaction.editReply({ embeds: [embed] });
+}
+
+export async function handleCustomMbtiReset(interaction: ChatInputCommandInteraction) {
+  const { guild, user } = interaction;
+  if (!guild) return;
+
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+  const userRecord = await Member.findOne({ where: { user_id: user.id, guild_id: guild.id } });
+
+  if (!userRecord || MBTI_TYPE_SET.has(userRecord.mbti_type)) {
+    const embed = new EmbedBuilder()
+      .setColor(EMBED_COLORS.warning)
+      .setDescription('현재 커스텀 MBTI가 설정되어 있지 않습니다.');
+    await interaction.editReply({ embeds: [embed] });
+    return;
+  }
+
+  // 로그에서 가장 최근 표준 MBTI 유형으로 되돌리기
+  const recentLog = await MbtiLog.findOne({
+    where: { user_id: user.id, guild_id: guild.id, mbti_type: { [Op.in]: [...MBTI_TYPES] } },
+    order: [['created_at', 'DESC']],
+  });
+
+  const revertType = recentLog?.mbti_type ?? 'NONE';
+  const prefix = (revertType === 'NONE' ? 'NO' : revertType.substring(0, 2)) as MbtiRolePrefix;
+
+  const [mbtiGroupRoles] = await Promise.all([
+    findMbtiGroupRoles(guild.id),
+    MbtiLog.create({ user_id: user.id, guild_id: guild.id, mbti_type: revertType }),
+    Member.upsert({ user_id: user.id, guild_id: guild.id, mbti_type: revertType }),
+  ]);
+
+  const matchingRole = mbtiGroupRoles.find((r) => r.name.startsWith(prefix));
+  const isOwner = guild.ownerId === user.id;
+
+  try {
+    const member = await guild.members.fetch(user.id);
+    const staleRoleIds = mbtiGroupRoles.map((r) => r.role_id).filter((id) => member.roles.cache.has(id));
+    // resolveDisplayType을 거치지 않고 직접 표준 타입 사용 (커스텀 타입 덮어쓰기)
+    const displayType = revertType === 'NONE' ? 'BABO' : revertType;
+    const newNick = resolveNewNickname(member.nickname, member.displayName, displayType, prefix);
+
+    await Promise.all([
+      ...(staleRoleIds.length > 0 ? [member.roles.remove(staleRoleIds)] : []),
+      ...(matchingRole ? [member.roles.add(matchingRole.role_id)] : []),
+      ...(!isOwner ? [member.setNickname(newNick)] : []),
+    ]);
+
+    console.log(`[MBTI] Custom MBTI reset to "${revertType}" for ${user.tag} (${user.id}) in guild ${guild.id}`);
+  } catch (err) {
+    console.error(`[MBTI] Custom MBTI reset failed for ${user.tag} (${user.id}):`, err);
+  }
+
+  const desc = revertType === 'NONE'
+    ? ['커스텀 MBTI가 초기화되었습니다. `/mbti 설정`으로 MBTI를 선택해주세요.']
+    : [`커스텀 MBTI가 초기화되었습니다. **${revertType}**(으)로 되돌아갔습니다.`];
   if (isOwner) desc.push('⚠️ 서버 소유자는 닉네임을 직접 변경해주세요.');
 
   const embed = new EmbedBuilder()
