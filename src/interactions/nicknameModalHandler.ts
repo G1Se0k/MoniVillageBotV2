@@ -2,8 +2,8 @@ import { MessageFlags, ModalSubmitInteraction } from 'discord.js';
 import { successEmbed, errorEmbed } from '../utils/embed';
 import { Member } from '../database/models/Member';
 import { NicknameLog } from '../database/models/NicknameLog';
-import { resolveNewNickname, resolveDisplayType } from './mbtiInteraction';
-import { MbtiRolePrefix, CUSTOM_IDS } from '../constants/mbti';
+import { mbtiTypeToPrefix, resolveDisplayType, resolveNewNickname } from './mbtiUtils';
+import { CUSTOM_IDS } from '../constants/mbti';
 
 export async function handleNicknameModal(interaction: ModalSubmitInteraction) {
   const { guild, user } = interaction;
@@ -13,19 +13,21 @@ export async function handleNicknameModal(interaction: ModalSubmitInteraction) {
 
   const newName = interaction.fields.getTextInputValue(CUSTOM_IDS.NICKNAME_INPUT);
 
-  const userRecord = await Member.findOne({ where: { user_id: user.id, guild_id: guild.id } });
+  const [userRecord, member] = await Promise.all([
+    Member.findOne({ where: { user_id: user.id, guild_id: guild.id } }),
+    guild.members.fetch(user.id),
+  ]);
 
   const mbtiType = userRecord?.mbti_type ?? 'NONE';
-  const prefix = (mbtiType === 'NONE' ? 'NO' : mbtiType.substring(0, 2)) as MbtiRolePrefix;
-
-  const member = await guild.members.fetch(user.id);
-
+  const prefix = mbtiTypeToPrefix(mbtiType);
   const displayType = resolveDisplayType(member.nickname, member.displayName, mbtiType);
   const newNick = resolveNewNickname(member.nickname, member.displayName, displayType, prefix, newName);
 
   try {
-    await member.setNickname(newNick);
-    await NicknameLog.create({ user_id: user.id, guild_id: guild.id, nickname: newNick });
+    await Promise.all([
+      member.setNickname(newNick),
+      NicknameLog.create({ user_id: user.id, guild_id: guild.id, nickname: newNick }),
+    ]);
     console.log(`[NICK] Nickname changed to "${newNick}" for ${user.id} in guild ${guild.id}`);
     await interaction.editReply({ embeds: [successEmbed(`닉네임이 **${newNick}**(으)로 변경되었습니다.`)] });
   } catch (err) {

@@ -5,10 +5,10 @@ import { SlashCommand } from '../types/slashCommand';
 import { Member } from '../database/models/Member';
 import { MbtiLog } from '../database/models/MbtiLog';
 import { NicknameLog } from '../database/models/NicknameLog';
-import { findMbtiGroupRoles, MbtiRolePrefix } from '../database/models/Role';
+import { findMbtiGroupRoles } from '../database/models/Role';
 import { Guild } from '../database/models/Guild';
 import { MBTI_TYPES, COOLDOWN_MS } from '../constants/mbti';
-import { resolveNewNickname, resolveDisplayType } from '../interactions/mbtiInteraction';
+import { applyMbtiRoleAndNick, mbtiTypeToPrefix, resolveDisplayType, resolveNewNickname } from '../interactions/mbtiUtils';
 
 export const userAdmin: SlashCommand = {
   data: new SlashCommandBuilder()
@@ -75,17 +75,21 @@ export const userAdmin: SlashCommand = {
         return;
       }
 
-      const userRecord = await Member.findOne({ where: { user_id: targetUser.id, guild_id: guild.id } });
+      const [userRecord, member] = await Promise.all([
+        Member.findOne({ where: { user_id: targetUser.id, guild_id: guild.id } }),
+        guild.members.fetch(targetUser.id),
+      ]);
+
       const mbtiType = userRecord?.mbti_type ?? 'NONE';
-      const prefix = (mbtiType === 'NONE' ? 'NO' : mbtiType.substring(0, 2)) as MbtiRolePrefix;
+      const prefix = mbtiTypeToPrefix(mbtiType);
+      const displayType = resolveDisplayType(member.nickname, member.displayName, mbtiType);
+      const newNick = resolveNewNickname(member.nickname, member.displayName, displayType, prefix, newName);
 
       try {
-        const member = await guild.members.fetch(targetUser.id);
-        const displayType = resolveDisplayType(member.nickname, member.displayName, mbtiType);
-        const newNick = resolveNewNickname(member.nickname, member.displayName, displayType, prefix, newName);
-        await member.setNickname(newNick);
-        await NicknameLog.create({ user_id: targetUser.id, guild_id: guild.id, nickname: newNick });
-
+        await Promise.all([
+          member.setNickname(newNick),
+          NicknameLog.create({ user_id: targetUser.id, guild_id: guild.id, nickname: newNick }),
+        ]);
         await interaction.editReply({ embeds: [successEmbed(`${targetUser}의 닉네임이 **${newNick}**(으)로 변경되었습니다.`)] });
         console.log(`[ADMIN] Nickname force-changed to "${newNick}" for ${targetUser.id} in guild ${guild.id} by ${interaction.user.id}`);
       } catch (err) {
@@ -98,35 +102,21 @@ export const userAdmin: SlashCommand = {
     if (subcommand === 'mbti강제설정') {
       const targetUser = interaction.options.getUser('유저', true);
       const selectedType = interaction.options.getString('유형', true);
-      const prefix = (selectedType === 'NONE' ? 'NO' : selectedType.substring(0, 2)) as MbtiRolePrefix;
 
       await Guild.findOrCreate({ where: { id: guild.id } });
-      const [mbtiGroupRoles] = await Promise.all([
+
+      const [mbtiGroupRoles, , , member] = await Promise.all([
         findMbtiGroupRoles(guild.id),
         MbtiLog.create({ user_id: targetUser.id, guild_id: guild.id, mbti_type: selectedType }),
         Member.upsert({ user_id: targetUser.id, guild_id: guild.id, mbti_type: selectedType }),
+        guild.members.fetch(targetUser.id),
       ]);
 
-      const matchingRole = mbtiGroupRoles.find((r) => r.name.startsWith(prefix));
-
-      const isOwner = guild.ownerId === targetUser.id;
-
       try {
-        const member = await guild.members.fetch(targetUser.id);
-        const staleRoleIds = mbtiGroupRoles.map((r) => r.role_id).filter((id) => member.roles.cache.has(id));
-
-        const displayType = resolveDisplayType(member.nickname, member.displayName, selectedType);
-        const newNick = resolveNewNickname(member.nickname, member.displayName, displayType, prefix);
-
-        await Promise.all([
-          ...(staleRoleIds.length > 0 ? [member.roles.remove(staleRoleIds)] : []),
-          ...(matchingRole ? [member.roles.add(matchingRole.role_id)] : []),
-          ...(!isOwner ? [member.setNickname(newNick)] : []),
-        ]);
-
+        const result = await applyMbtiRoleAndNick(guild, member, mbtiGroupRoles, selectedType);
         const lines = [`${targetUser}의 MBTI가 **${selectedType}**(으)로 설정되었습니다.`];
-        if (matchingRole) lines.push(`**${matchingRole.name}** 역할이 부여되었습니다.`);
-        if (isOwner) lines.push('⚠️ 서버 소유자는 닉네임을 직접 변경해야 합니다.');
+        if (result.roleAssigned && result.roleName) lines.push(`**${result.roleName}** 역할이 부여되었습니다.`);
+        if (guild.ownerId === targetUser.id) lines.push('⚠️ 서버 소유자는 닉네임을 직접 변경해야 합니다.');
         await interaction.editReply({ embeds: [successEmbed(lines.join('\n'))] });
         console.log(`[ADMIN] MBTI force-set to ${selectedType} for ${targetUser.id} in guild ${guild.id} by ${interaction.user.id}`);
       } catch (err) {

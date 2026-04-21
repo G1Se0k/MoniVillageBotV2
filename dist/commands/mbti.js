@@ -20,6 +20,7 @@ const mbti_1 = require("../constants/mbti");
 Object.defineProperty(exports, "MBTI_ROLE_PREFIXES", { enumerable: true, get: function () { return mbti_1.MBTI_ROLE_PREFIXES; } });
 const embed_1 = require("../utils/embed");
 const customMbtiModalHandler_1 = require("../interactions/customMbtiModalHandler");
+const mbtiUtils_1 = require("../interactions/mbtiUtils");
 // Built once at module load — reused for every /mbti 설정 call
 const SELECT_MENU_ROW = new discord_js_1.ActionRowBuilder().addComponents(new discord_js_1.StringSelectMenuBuilder()
     .setCustomId(mbti_1.CUSTOM_IDS.MBTI_SELECT)
@@ -71,7 +72,7 @@ exports.mbti = {
         .addSubcommand((sub) => sub.setName('서버통계').setDescription('서버의 MBTI 유형 분포를 조회합니다.')),
     handlesDeferral: true,
     execute: (_, interaction) => __awaiter(void 0, void 0, void 0, function* () {
-        var _a, _b, _c;
+        var _a, _b;
         const { guild, user } = interaction;
         if (!guild)
             return;
@@ -136,14 +137,18 @@ exports.mbti = {
                 yield interaction.editReply({ embeds: [(0, embed_1.warnEmbed)('등록된 유저가 없습니다.')] });
                 return;
             }
-            // MBTI 그룹별 카운트
             const groupCount = { IS: 0, IN: 0, ES: 0, EN: 0, NO: 0 };
             const typeCount = {};
+            let customCount = 0;
             for (const u of users) {
                 const type = u.mbti_type;
-                const group = type === 'NONE' ? 'NO' : type.substring(0, 2);
-                groupCount[group] = ((_a = groupCount[group]) !== null && _a !== void 0 ? _a : 0) + 1;
-                typeCount[type] = ((_b = typeCount[type]) !== null && _b !== void 0 ? _b : 0) + 1;
+                typeCount[type] = ((_a = typeCount[type]) !== null && _a !== void 0 ? _a : 0) + 1;
+                if (!mbti_1.MBTI_TYPE_SET.has(type)) {
+                    customCount++;
+                }
+                else {
+                    groupCount[(0, mbtiUtils_1.mbtiTypeToPrefix)(type)] += 1;
+                }
             }
             const BAR_WIDTH = 20;
             const maxCount = Math.max(...mbti_1.MBTI_ROLE_PREFIXES.map((p) => { var _a; return (_a = groupCount[p]) !== null && _a !== void 0 ? _a : 0; }), 1);
@@ -156,17 +161,17 @@ exports.mbti = {
                 return `${mbti_1.GROUP_EMOJIS[prefix]} **${prefix}** ${count}명 (${pct}%)\n${bar}`;
             });
             const sortedTypes = Object.entries(typeCount)
-                .filter(([t]) => t !== 'NONE')
+                .filter(([t]) => t !== 'NONE' && mbti_1.MBTI_TYPE_SET.has(t))
                 .sort(([, a], [, b]) => b - a)
                 .slice(0, 5)
                 .map(([t, c]) => `**${t}** ${c}명`)
                 .join(' · ');
-            const noneCount = (_c = typeCount['NONE']) !== null && _c !== void 0 ? _c : 0;
+            const noneCount = (_b = typeCount['NONE']) !== null && _b !== void 0 ? _b : 0;
             const embed = new discord_js_1.EmbedBuilder()
                 .setColor(embed_1.EMBED_COLORS.primary)
                 .setTitle('서버 MBTI 분포')
                 .setDescription(groupLines.join('\n'))
-                .addFields({ name: '미설정', value: `${noneCount}명`, inline: true })
+                .addFields({ name: '미설정', value: `${noneCount}명`, inline: true }, { name: '커스텀', value: `${customCount}명`, inline: true })
                 .setFooter({ text: `총 ${total}명` });
             if (sortedTypes) {
                 embed.addFields({ name: 'Top 5 유형', value: sortedTypes, inline: false });

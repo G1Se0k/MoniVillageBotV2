@@ -17,9 +17,10 @@ import { SlashCommand } from '../types/slashCommand';
 import { MbtiLog } from '../database/models/MbtiLog';
 import { Role as DbRole, findMbtiGroupRoles, registerRoleToDb } from '../database/models/Role';
 import { Member } from '../database/models/Member';
-import { MBTI_TYPES, MBTI_ROLE_PREFIXES, MbtiRolePrefix, CUSTOM_IDS, GROUP_EMOJIS } from '../constants/mbti';
+import { MBTI_TYPES, MBTI_TYPE_SET, MBTI_ROLE_PREFIXES, MbtiRolePrefix, CUSTOM_IDS, GROUP_EMOJIS } from '../constants/mbti';
 import { infoEmbed, warnEmbed, EMBED_COLORS } from '../utils/embed';
 import { handleCustomMbtiReset } from '../interactions/customMbtiModalHandler';
+import { mbtiTypeToPrefix } from '../interactions/mbtiUtils';
 
 // Built once at module load — reused for every /mbti 설정 call
 const SELECT_MENU_ROW = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
@@ -168,15 +169,18 @@ export const mbti: SlashCommand = {
         return;
       }
 
-      // MBTI 그룹별 카운트
       const groupCount: Record<string, number> = { IS: 0, IN: 0, ES: 0, EN: 0, NO: 0 };
       const typeCount: Record<string, number> = {};
+      let customCount = 0;
 
       for (const u of users) {
         const type = u.mbti_type;
-        const group = type === 'NONE' ? 'NO' : type.substring(0, 2);
-        groupCount[group] = (groupCount[group] ?? 0) + 1;
         typeCount[type] = (typeCount[type] ?? 0) + 1;
+        if (!MBTI_TYPE_SET.has(type)) {
+          customCount++;
+        } else {
+          groupCount[mbtiTypeToPrefix(type)] += 1;
+        }
       }
 
       const BAR_WIDTH = 20;
@@ -191,7 +195,7 @@ export const mbti: SlashCommand = {
       });
 
       const sortedTypes = Object.entries(typeCount)
-        .filter(([t]) => t !== 'NONE')
+        .filter(([t]) => t !== 'NONE' && MBTI_TYPE_SET.has(t))
         .sort(([, a], [, b]) => b - a)
         .slice(0, 5)
         .map(([t, c]) => `**${t}** ${c}명`)
@@ -203,7 +207,10 @@ export const mbti: SlashCommand = {
         .setColor(EMBED_COLORS.primary)
         .setTitle('서버 MBTI 분포')
         .setDescription(groupLines.join('\n'))
-        .addFields({ name: '미설정', value: `${noneCount}명`, inline: true })
+        .addFields(
+          { name: '미설정', value: `${noneCount}명`, inline: true },
+          { name: '커스텀', value: `${customCount}명`, inline: true },
+        )
         .setFooter({ text: `총 ${total}명` });
 
       if (sortedTypes) {
