@@ -17,6 +17,8 @@ export const CUSTOM_IDS = {
   MBTI_SELECT: 'mbti_select',
   NICKNAME_MODAL: 'nickname_modal',
   NICKNAME_INPUT: 'nickname_input',
+  CUSTOM_MBTI_MODAL: 'custom_mbti_modal',
+  CUSTOM_MBTI_INPUT: 'custom_mbti_input',
 } as const;
 
 export const BOT_NICK_REGEX = /^\S+ .+\/[A-Z]{4} \S+$/;

@@ -4,6 +4,7 @@ import commands from './commands';
 import { connectDatabase } from './database/database';
 import { handleMbtiSelect } from './interactions/mbtiInteraction';
 import { handleNicknameModal } from './interactions/nicknameModalHandler';
+import { handleCustomMbtiModal } from './interactions/customMbtiModalHandler';
 import { handleGuildMemberAdd } from './interactions/guildMemberAddHandler';
 import { handleRoleDelete } from './interactions/roleDeleteHandler';
 import { CUSTOM_IDS } from './constants/mbti';
@@ -53,6 +54,11 @@ client.on('interactionCreate', async (interaction) => {
 
   if (interaction.isModalSubmit() && interaction.customId === CUSTOM_IDS.NICKNAME_MODAL) {
     await handleNicknameModal(interaction);
+    return;
+  }
+
+  if (interaction.isModalSubmit() && interaction.customId === CUSTOM_IDS.CUSTOM_MBTI_MODAL) {
+    await handleCustomMbtiModal(interaction);
     return;
   }
 });

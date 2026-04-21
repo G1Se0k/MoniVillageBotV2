@@ -5,10 +5,13 @@ import {
   EmbedBuilder,
   Guild,
   MessageFlags,
+  ModalBuilder,
   Role,
   SlashCommandBuilder,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
+  TextInputBuilder,
+  TextInputStyle,
 } from 'discord.js';
 import { SlashCommand } from '../types/slashCommand';
 import { MbtiLog } from '../database/models/MbtiLog';
@@ -79,6 +82,7 @@ export const mbti: SlashCommand = {
     .setName('mbti')
     .setDescription('MBTI 유형을 관리합니다.')
     .addSubcommand((sub) => sub.setName('설정').setDescription('나의 MBTI 유형을 선택합니다.'))
+    .addSubcommand((sub) => sub.setName('커스텀').setDescription('서버 부스터 전용: 나만의 커스텀 MBTI 유형을 설정합니다.'))
     .addSubcommand((sub) => sub.setName('히스토리').setDescription('나의 MBTI 선택 히스토리를 조회합니다.'))
     .addSubcommand((sub) => sub.setName('서버통계').setDescription('서버의 MBTI 유형 분포를 조회합니다.')),
   handlesDeferral: true,
@@ -91,6 +95,34 @@ export const mbti: SlashCommand = {
     if (subcommand === '설정') {
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       await interaction.editReply({ content: '아래에서 나의 MBTI 유형을 선택하세요:', components: [SELECT_MENU_ROW] });
+      return;
+    }
+
+    if (subcommand === '커스텀') {
+      const member = await guild.members.fetch(user.id);
+      if (!member.premiumSince) {
+        await interaction.reply({
+          embeds: [warnEmbed('서버 부스터만 사용할 수 있는 기능입니다. 서버를 부스트하면 커스텀 MBTI를 설정할 수 있습니다!')],
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+
+      const modal = new ModalBuilder()
+        .setCustomId(CUSTOM_IDS.CUSTOM_MBTI_MODAL)
+        .setTitle('✨ 커스텀 MBTI 설정');
+
+      const input = new TextInputBuilder()
+        .setCustomId(CUSTOM_IDS.CUSTOM_MBTI_INPUT)
+        .setLabel('커스텀 MBTI 유형 (4글자 영문 대문자)')
+        .setStyle(TextInputStyle.Short)
+        .setMinLength(4)
+        .setMaxLength(4)
+        .setPlaceholder('예: GISO, MONI, BOSS')
+        .setRequired(true);
+
+      modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(input));
+      await interaction.showModal(modal);
       return;
     }
 

@@ -14,6 +14,8 @@ exports.CUSTOM_IDS = {
     MBTI_SELECT: 'mbti_select',
     NICKNAME_MODAL: 'nickname_modal',
     NICKNAME_INPUT: 'nickname_input',
+    CUSTOM_MBTI_MODAL: 'custom_mbti_modal',
+    CUSTOM_MBTI_INPUT: 'custom_mbti_input',
 };
 exports.BOT_NICK_REGEX = /^\S+ .+\/[A-Z]{4} \S+$/;
 // 닉네임에서 MBTI/커스텀 타입 슬롯을 추출하는 정규식

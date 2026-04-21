@@ -64,6 +64,7 @@ exports.mbti = {
         .setName('mbti')
         .setDescription('MBTI 유형을 관리합니다.')
         .addSubcommand((sub) => sub.setName('설정').setDescription('나의 MBTI 유형을 선택합니다.'))
+        .addSubcommand((sub) => sub.setName('커스텀').setDescription('서버 부스터 전용: 나만의 커스텀 MBTI 유형을 설정합니다.'))
         .addSubcommand((sub) => sub.setName('히스토리').setDescription('나의 MBTI 선택 히스토리를 조회합니다.'))
         .addSubcommand((sub) => sub.setName('서버통계').setDescription('서버의 MBTI 유형 분포를 조회합니다.')),
     handlesDeferral: true,
@@ -76,6 +77,30 @@ exports.mbti = {
         if (subcommand === '설정') {
             yield interaction.deferReply({ flags: discord_js_1.MessageFlags.Ephemeral });
             yield interaction.editReply({ content: '아래에서 나의 MBTI 유형을 선택하세요:', components: [SELECT_MENU_ROW] });
+            return;
+        }
+        if (subcommand === '커스텀') {
+            const member = yield guild.members.fetch(user.id);
+            if (!member.premiumSince) {
+                yield interaction.reply({
+                    embeds: [(0, embed_1.warnEmbed)('서버 부스터만 사용할 수 있는 기능입니다. 서버를 부스트하면 커스텀 MBTI를 설정할 수 있습니다!')],
+                    flags: discord_js_1.MessageFlags.Ephemeral,
+                });
+                return;
+            }
+            const modal = new discord_js_1.ModalBuilder()
+                .setCustomId(mbti_1.CUSTOM_IDS.CUSTOM_MBTI_MODAL)
+                .setTitle('✨ 커스텀 MBTI 설정');
+            const input = new discord_js_1.TextInputBuilder()
+                .setCustomId(mbti_1.CUSTOM_IDS.CUSTOM_MBTI_INPUT)
+                .setLabel('커스텀 MBTI 유형 (4글자 영문 대문자)')
+                .setStyle(discord_js_1.TextInputStyle.Short)
+                .setMinLength(4)
+                .setMaxLength(4)
+                .setPlaceholder('예: GISO, MONI, BOSS')
+                .setRequired(true);
+            modal.addComponents(new discord_js_1.ActionRowBuilder().addComponents(input));
+            yield interaction.showModal(modal);
             return;
         }
         if (subcommand === '히스토리') {
@@ -114,12 +139,15 @@ exports.mbti = {
                 groupCount[group] = ((_a = groupCount[group]) !== null && _a !== void 0 ? _a : 0) + 1;
                 typeCount[type] = ((_b = typeCount[type]) !== null && _b !== void 0 ? _b : 0) + 1;
             }
+            const BAR_WIDTH = 20;
+            const maxCount = Math.max(...mbti_1.MBTI_ROLE_PREFIXES.map((p) => { var _a; return (_a = groupCount[p]) !== null && _a !== void 0 ? _a : 0; }), 1);
             const groupLines = mbti_1.MBTI_ROLE_PREFIXES.map((prefix) => {
                 var _a;
                 const count = (_a = groupCount[prefix]) !== null && _a !== void 0 ? _a : 0;
                 const pct = ((count / total) * 100).toFixed(1);
-                const bar = '█'.repeat(Math.round((count / total) * 10)).padEnd(10, '░');
-                return `${mbti_1.GROUP_EMOJIS[prefix]} **${prefix}** ${bar} ${count}명 (${pct}%)`;
+                const filled = Math.round((count / maxCount) * BAR_WIDTH);
+                const bar = `\`${'█'.repeat(filled).padEnd(BAR_WIDTH, '░')}\``;
+                return `${mbti_1.GROUP_EMOJIS[prefix]} **${prefix}** ${count}명 (${pct}%)\n${bar}`;
             });
             const sortedTypes = Object.entries(typeCount)
                 .filter(([t]) => t !== 'NONE')

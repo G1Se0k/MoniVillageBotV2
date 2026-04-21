@@ -18,6 +18,7 @@ const commands_1 = __importDefault(require("./commands"));
 const database_1 = require("./database/database");
 const mbtiInteraction_1 = require("./interactions/mbtiInteraction");
 const nicknameModalHandler_1 = require("./interactions/nicknameModalHandler");
+const customMbtiModalHandler_1 = require("./interactions/customMbtiModalHandler");
 const guildMemberAddHandler_1 = require("./interactions/guildMemberAddHandler");
 const roleDeleteHandler_1 = require("./interactions/roleDeleteHandler");
 const mbti_1 = require("./constants/mbti");
@@ -37,6 +38,7 @@ client.once('ready', () => __awaiter(void 0, void 0, void 0, function* () {
     console.log('Bot ready!');
 }));
 client.on('interactionCreate', (interaction) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     if (interaction.isChatInputCommand()) {
         const command = commands_1.default.find((c) => c.data.name === interaction.commandName);
         if (!command)
@@ -45,7 +47,13 @@ client.on('interactionCreate', (interaction) => __awaiter(void 0, void 0, void 0
             yield interaction.deferReply({ flags: discord_js_1.MessageFlags.Ephemeral });
         }
         yield command.execute(client, interaction);
-        console.log(`Command executed: ${command.data.name}`);
+        const subcommand = interaction.options.getSubcommand(false);
+        const fullCommand = subcommand ? `/${command.data.name} ${subcommand}` : `/${command.data.name}`;
+        const guildName = (_b = (_a = interaction.guild) === null || _a === void 0 ? void 0 : _a.name) !== null && _b !== void 0 ? _b : '알 수 없는 서버';
+        const nickname = interaction.member && 'displayName' in interaction.member
+            ? interaction.member.displayName
+            : interaction.user.username;
+        console.log(`[CMD] ${guildName} | ${nickname} | ${fullCommand}`);
         return;
     }
     if (interaction.isStringSelectMenu() && interaction.customId === mbti_1.CUSTOM_IDS.MBTI_SELECT) {
@@ -54,6 +62,10 @@ client.on('interactionCreate', (interaction) => __awaiter(void 0, void 0, void 0
     }
     if (interaction.isModalSubmit() && interaction.customId === mbti_1.CUSTOM_IDS.NICKNAME_MODAL) {
         yield (0, nicknameModalHandler_1.handleNicknameModal)(interaction);
+        return;
+    }
+    if (interaction.isModalSubmit() && interaction.customId === mbti_1.CUSTOM_IDS.CUSTOM_MBTI_MODAL) {
+        yield (0, customMbtiModalHandler_1.handleCustomMbtiModal)(interaction);
         return;
     }
 }));
