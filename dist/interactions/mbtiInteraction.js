@@ -26,19 +26,23 @@ function handleMbtiSelect(interaction) {
         if (!guild)
             return;
         const selectedType = interaction.values[0];
-        const userRecord = yield Member_1.Member.findOne({ where: { user_id: user.id, guild_id: guild.id } });
-        if ((userRecord === null || userRecord === void 0 ? void 0 : userRecord.mbti_type) === selectedType) {
+        // 읽기 단계: 쓰기 없이 필요한 데이터를 모두 병렬로 조회
+        const [mbtiGroupRoles, existingRecord, member] = yield Promise.all([
+            (0, Role_1.findMbtiGroupRoles)(guild.id),
+            Member_1.Member.findOne({ where: { user_id: user.id, guild_id: guild.id } }),
+            guild.members.fetch(user.id),
+        ]);
+        if ((existingRecord === null || existingRecord === void 0 ? void 0 : existingRecord.mbti_type) === selectedType) {
             yield interaction.update({
                 embeds: [new discord_js_1.EmbedBuilder().setColor(embed_1.EMBED_COLORS.warning).setDescription(`이미 **${selectedType}**(으)로 선택되어 있습니다.`)],
                 components: [],
             });
             return;
         }
-        const [mbtiGroupRoles, , , member] = yield Promise.all([
-            (0, Role_1.findMbtiGroupRoles)(guild.id),
+        // 쓰기 단계: 중복 체크 통과 후에만 DB에 반영
+        yield Promise.all([
             MbtiLog_1.MbtiLog.create({ user_id: user.id, guild_id: guild.id, mbti_type: selectedType }),
             Member_1.Member.upsert({ user_id: user.id, guild_id: guild.id, mbti_type: selectedType }),
-            guild.members.fetch(user.id),
         ]);
         const prefix = (0, mbtiUtils_1.mbtiTypeToPrefix)(selectedType);
         const groupColor = (_a = embed_1.EMBED_COLORS[prefix]) !== null && _a !== void 0 ? _a : embed_1.EMBED_COLORS.success;
