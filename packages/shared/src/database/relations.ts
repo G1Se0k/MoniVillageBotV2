@@ -1,6 +1,8 @@
 import { Guild } from './models/Guild';
 import { Member } from './models/Member';
 import { Role } from './models/Role';
+import { Item } from './models/Item';
+import { UserItem } from './models/UserItem';
 
 let initialized = false;
 
@@ -16,6 +18,10 @@ export const initRelations = () => {
   Guild.hasMany(Role, { foreignKey: 'guild_id', sourceKey: 'id', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
   Role.belongsTo(Guild, { foreignKey: 'guild_id', targetKey: 'id' });
 
-  // mbti_logs, nickname_logs는 members의 복합 PK(user_id, guild_id)를 참조해야 하나
+  // items → user_items (아이템 삭제 시 소유 기록도 함께 정리)
+  Item.hasMany(UserItem, { foreignKey: 'item_id', sourceKey: 'id', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+  UserItem.belongsTo(Item, { foreignKey: 'item_id', targetKey: 'id' });
+
+  // mbti_logs, nickname_logs, user_items의 user_id는 members의 복합 PK(user_id, guild_id)를 참조해야 하나
   // Sequelize가 복합 FK를 지원하지 않아 연관관계 대신 인덱스로 처리
 };

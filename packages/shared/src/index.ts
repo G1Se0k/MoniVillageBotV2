@@ -7,3 +7,5 @@ export * from './database/models/Member';
 export * from './database/models/Role';
 export * from './database/models/MbtiLog';
 export * from './database/models/NicknameLog';
+export * from './database/models/Item';
+export * from './database/models/UserItem';
