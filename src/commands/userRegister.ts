@@ -1,18 +1,16 @@
-import { ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import { successEmbed } from '../utils/embed';
 import { SlashCommand } from '../types/slashCommand';
 import { Guild } from '../database/models/Guild';
 import { Member } from '../database/models/Member';
-import { MBTI_TYPES } from '../constants/mbti';
-
-const MBTI_TYPE_SET = new Set<string>(MBTI_TYPES);
+import { MBTI_TYPE_SET, NICK_TYPE_REGEX } from '../constants/mbti';
 
 function extractMbtiFromNickname(nickname: string | null, displayName: string): string {
   const source = nickname ?? displayName;
-  const match = source.match(/\/([A-Z]{4})\s/);
+  const match = NICK_TYPE_REGEX.exec(source);
   if (!match) return 'NONE';
   const type = match[1];
-  return MBTI_TYPE_SET.has(type) ? type : 'NONE';
+  return MBTI_TYPE_SET.has(type) && type !== 'BABO' ? type : 'NONE';
 }
 
 export const userRegister: SlashCommand = {
@@ -24,6 +22,7 @@ export const userRegister: SlashCommand = {
     const { guild } = interaction;
     if (!guild) return;
 
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     await interaction.editReply({ content: '서버 멤버 전체 등록 중...' });
 
     const [, guildCreated] = await Guild.findOrCreate({ where: { id: guild.id } });

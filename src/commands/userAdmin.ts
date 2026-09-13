@@ -1,4 +1,4 @@
-import { PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
+import { MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import { successEmbed, errorEmbed, warnEmbed } from '../utils/embed';
 import { Op } from 'sequelize';
 import { SlashCommand } from '../types/slashCommand';
@@ -47,6 +47,7 @@ export const userAdmin: SlashCommand = {
     const { guild } = interaction;
     if (!guild) return;
 
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === '닉쿨다운리셋') {

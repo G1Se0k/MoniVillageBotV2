@@ -1,8 +1,62 @@
-import { PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
-import { infoEmbed, successEmbed } from '../utils/embed';
+import {
+  Collection,
+  Guild,
+  MessageFlags,
+  PermissionFlagsBits,
+  Role as DiscordRole,
+  SlashCommandBuilder,
+} from 'discord.js';
+import { infoEmbed, successEmbed, EMBED_COLORS } from '../utils/embed';
 import { SlashCommand } from '../types/slashCommand';
-import { Role, invalidateMbtiRoleCache } from '../database/models/Role';
-import { SyncStatus, syncMbtiGroupRole, findMbtiGroupRoles, MBTI_ROLE_PREFIXES, MbtiRolePrefix } from './mbti';
+import {
+  Role,
+  findMbtiGroupRoles,
+  invalidateMbtiRoleCache,
+  registerRoleToDb,
+} from '../database/models/Role';
+import { MBTI_ROLE_PREFIXES, MbtiRolePrefix } from '../constants/mbti';
+
+type SyncStatus = 'db' | 'registered' | 'created' | 'recreated';
+
+async function syncMbtiGroupRole(
+  guild: Guild,
+  prefix: MbtiRolePrefix,
+  dbRoles: Role[],
+  discordRoles: Collection<string, DiscordRole>,
+): Promise<SyncStatus> {
+  const dbRole = dbRoles.find((r) => r.name.startsWith(prefix));
+  const discordRole = discordRoles.find((r) => r.name.startsWith(prefix));
+
+  const boostRole = discordRoles.find((r) => r.tags?.premiumSubscriberRole === null);
+  const boostPosition = boostRole ? boostRole.position : 0;
+  const color = EMBED_COLORS[prefix];
+  const position = Math.max(1, boostPosition - 1);
+
+  if (dbRole && discordRole) {
+    await discordRole.edit({ color, position });
+    console.log(`[ROLE] Updated Discord role "${discordRole.name}" (${discordRole.id}) color and position in guild ${guild.id}`);
+    return 'db';
+  }
+
+  if (dbRole && !discordRole) {
+    await dbRole.destroy();
+    const newRole = await guild.roles.create({ name: prefix, color, position });
+    await registerRoleToDb(newRole.id, guild.id, newRole.name);
+    console.log(`[ROLE] Recreated Discord role "${newRole.name}" (${newRole.id}) and re-registered to DB in guild ${guild.id}`);
+    return 'recreated';
+  }
+
+  if (!dbRole && discordRole) {
+    await registerRoleToDb(discordRole.id, guild.id, discordRole.name);
+    console.log(`[ROLE] Registered existing Discord role "${discordRole.name}" (${discordRole.id}) to DB in guild ${guild.id}`);
+    return 'registered';
+  }
+
+  const newRole = await guild.roles.create({ name: prefix, color, position });
+  await registerRoleToDb(newRole.id, guild.id, newRole.name);
+  console.log(`[ROLE] Created Discord role "${newRole.name}" (${newRole.id}) in guild ${guild.id}`);
+  return 'created';
+}
 
 export const role: SlashCommand = {
   data: new SlashCommandBuilder()
@@ -18,6 +72,7 @@ export const role: SlashCommand = {
     const { guild } = interaction;
     if (!guild) return;
 
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === '등록') {
@@ -67,7 +122,7 @@ export const role: SlashCommand = {
 
       const syncResults = await Promise.all(
         MBTI_ROLE_PREFIXES.map((prefix) =>
-          syncMbtiGroupRole(guild, prefix as MbtiRolePrefix, dbRoles, discordRoles).then((status) => ({ prefix, status })),
+          syncMbtiGroupRole(guild, prefix, dbRoles, discordRoles).then((status) => ({ prefix, status })),
         ),
       );
       for (const { prefix, status } of syncResults) {

@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Client, GatewayIntentBits, MessageFlags } from 'discord.js';
+import { Client, GatewayIntentBits } from 'discord.js';
 import commands from './commands';
 import { connectDatabase } from './database/database';
 import { handleMbtiSelect } from './interactions/mbtiInteraction';
@@ -19,10 +19,8 @@ const client = new Client({
 
 client.once('ready', async () => {
   if (!client.application) return;
-
-  await client.application.commands.set(commands.map((command) => command.data));
+  await client.application.commands.set(commands.map((c) => c.data));
   console.log('Commands registered');
-
   await connectDatabase();
   console.log('Bot ready!');
 });
@@ -32,9 +30,6 @@ client.on('interactionCreate', async (interaction) => {
     const command = commands.find((c) => c.data.name === interaction.commandName);
     if (!command) return;
 
-    if (!command.handlesDeferral) {
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-    }
     await command.execute(client, interaction);
 
     const subcommand = interaction.options.getSubcommand(false);
@@ -52,20 +47,13 @@ client.on('interactionCreate', async (interaction) => {
     return;
   }
 
-  if (interaction.isModalSubmit() && interaction.customId === CUSTOM_IDS.NICKNAME_MODAL) {
-    await handleNicknameModal(interaction);
-    return;
-  }
-
-  if (interaction.isModalSubmit() && interaction.customId === CUSTOM_IDS.CUSTOM_MBTI_MODAL) {
-    await handleCustomMbtiModal(interaction);
-    return;
+  if (interaction.isModalSubmit()) {
+    if (interaction.customId === CUSTOM_IDS.NICKNAME_MODAL) await handleNicknameModal(interaction);
+    else if (interaction.customId === CUSTOM_IDS.CUSTOM_MBTI_MODAL) await handleCustomMbtiModal(interaction);
   }
 });
 
 client.on('guildMemberAdd', handleGuildMemberAdd);
 client.on('roleDelete', handleRoleDelete);
 
-(async () => {
-  await client.login(process.env.TOKEN);
-})();
+void client.login(process.env.TOKEN);

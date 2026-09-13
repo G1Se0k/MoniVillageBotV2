@@ -24,8 +24,8 @@ export function resolveNewNickname(
   overrideName?: string,
 ): string {
   const source = currentNick ?? displayName;
-  const foundEmojis = [...source.matchAll(/\p{Emoji_Presentation}/gu)].map((m) => m[0]);
-  const emoji = foundEmojis.find((e) => !OUR_EMOJI_SET.has(e)) ?? GROUP_EMOJIS[prefix];
+  const emoji = (source.match(/\p{Emoji_Presentation}/gu) ?? []).find((e) => !OUR_EMOJI_SET.has(e))
+    ?? GROUP_EMOJIS[prefix];
 
   let baseName: string;
   if (overrideName) {

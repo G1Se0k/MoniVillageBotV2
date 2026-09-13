@@ -3,14 +3,14 @@ import { SlashCommand } from '../types/slashCommand';
 import { Member } from '../database/models/Member';
 import { MbtiLog } from '../database/models/MbtiLog';
 import { NicknameLog } from '../database/models/NicknameLog';
-import { EMBED_COLORS } from '../utils/embed';
+import { EMBED_COLORS, errorEmbed } from '../utils/embed';
 import { COOLDOWN_MS, GROUP_EMOJIS } from '../constants/mbti';
+import { mbtiTypeToPrefix } from '../interactions/mbtiUtils';
 
 export const myInfo: SlashCommand = {
   data: new SlashCommandBuilder()
     .setName('내정보')
     .setDescription('나의 등록 정보를 조회합니다.'),
-  handlesDeferral: true,
   execute: async (_, interaction) => {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const { guild, user } = interaction;
@@ -23,17 +23,14 @@ export const myInfo: SlashCommand = {
     ]);
 
     if (!userRecord) {
-      const embed = new EmbedBuilder()
-        .setColor(EMBED_COLORS.error)
-        .setDescription('등록된 정보가 없습니다. 서버 관리자에게 문의해주세요.');
-      await interaction.editReply({ embeds: [embed] });
+      await interaction.editReply({ embeds: [errorEmbed('등록된 정보가 없습니다. 서버 관리자에게 문의해주세요.')] });
       return;
     }
 
     const mbtiType = userRecord.mbti_type;
-    const group = mbtiType === 'NONE' ? 'NO' : mbtiType.substring(0, 2);
-    const groupEmoji = GROUP_EMOJIS[group as keyof typeof GROUP_EMOJIS] ?? '⬛';
-    const color = EMBED_COLORS[group as keyof typeof EMBED_COLORS] ?? EMBED_COLORS.primary;
+    const group = mbtiTypeToPrefix(mbtiType);
+    const groupEmoji = GROUP_EMOJIS[group];
+    const color = EMBED_COLORS[group];
 
     // 닉네임 쿨다운 계산
     let cooldownText = '지금 변경 가능';
@@ -46,7 +43,7 @@ export const myInfo: SlashCommand = {
     }
 
     const embed = new EmbedBuilder()
-      .setColor(color as number)
+      .setColor(color)
       .setTitle(`${user.displayName}의 정보`)
       .setThumbnail(user.displayAvatarURL())
       .addFields(

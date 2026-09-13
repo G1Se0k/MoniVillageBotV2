@@ -3,5 +3,4 @@ import { Client, SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandS
 export type SlashCommand = {
   data: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder;
   execute: (client: Client, interaction: ChatInputCommandInteraction) => Promise<void> | void;
-  handlesDeferral?: boolean;
 };

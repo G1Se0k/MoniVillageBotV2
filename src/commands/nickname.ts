@@ -10,7 +10,6 @@ export const nickname: SlashCommand = {
     .setDescription('닉네임을 관리합니다.')
     .addSubcommand((sub) => sub.setName('변경').setDescription('닉네임을 변경합니다.'))
     .addSubcommand((sub) => sub.setName('히스토리').setDescription('나의 닉네임 변경 히스토리를 조회합니다.')),
-  handlesDeferral: true,
   execute: async (_, interaction) => {
     const subcommand = interaction.options.getSubcommand();
 

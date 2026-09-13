@@ -3,9 +3,7 @@ import { EMBED_COLORS } from '../utils/embed';
 import { MbtiLog } from '../database/models/MbtiLog';
 import { Member } from '../database/models/Member';
 import { findMbtiGroupRoles } from '../database/models/Role';
-import { applyMbtiRoleAndNick, mbtiTypeToPrefix, resolveDisplayType, resolveNewNickname } from './mbtiUtils';
-
-export { resolveDisplayType, resolveNewNickname };
+import { applyMbtiRoleAndNick, mbtiTypeToPrefix } from './mbtiUtils';
 
 export async function handleMbtiSelect(interaction: StringSelectMenuInteraction) {
   const { guild, user } = interaction;
@@ -35,18 +33,14 @@ export async function handleMbtiSelect(interaction: StringSelectMenuInteraction)
   ]);
 
   const prefix = mbtiTypeToPrefix(selectedType);
-  const groupColor = EMBED_COLORS[prefix] ?? EMBED_COLORS.success;
+  const groupColor = EMBED_COLORS[prefix];
+  const isOwner = guild.ownerId === user.id;
 
-  let roleAssigned = false;
-  let roleName: string | undefined;
-  let isOwner = guild.ownerId === user.id;
-
+  let result: Awaited<ReturnType<typeof applyMbtiRoleAndNick>> | null = null;
   try {
-    const result = await applyMbtiRoleAndNick(guild, member, mbtiGroupRoles, selectedType);
-    roleAssigned = result.roleAssigned;
-    roleName = result.roleName;
+    result = await applyMbtiRoleAndNick(guild, member, mbtiGroupRoles, selectedType);
     if (result.newNick) console.log(`[MBTI] Nickname updated to "${result.newNick}" for ${user.tag} (${user.id}) in guild ${guild.id}`);
-    if (roleAssigned) console.log(`[MBTI] Role "${roleName}" assigned to ${user.tag} (${user.id}) in guild ${guild.id}`);
+    if (result.roleAssigned) console.log(`[MBTI] Role "${result.roleName}" assigned to ${user.tag} (${user.id}) in guild ${guild.id}`);
   } catch (err) {
     console.error(`[MBTI] Role/nickname update failed for ${user.tag} (${user.id}):`, err);
   }
@@ -54,11 +48,11 @@ export async function handleMbtiSelect(interaction: StringSelectMenuInteraction)
   console.log(`[MBTI] ${user.tag} (${user.id}) selected ${selectedType} in guild ${guild.id}`);
 
   const desc = [`✅ MBTI 유형이 **${selectedType}**(으)로 저장되었습니다!`];
-  if (roleAssigned && roleName) desc.push(`**${roleName}** 역할이 부여되었습니다.`);
+  if (result?.roleAssigned && result.roleName) desc.push(`**${result.roleName}** 역할이 부여되었습니다.`);
   if (isOwner) desc.push('\n⚠️ 서버 소유자는 닉네임을 직접 변경해주세요.');
 
   await interaction.update({
-    embeds: [new EmbedBuilder().setColor(groupColor as number).setDescription(desc.join('\n'))],
+    embeds: [new EmbedBuilder().setColor(groupColor).setDescription(desc.join('\n'))],
     components: [],
   });
 }

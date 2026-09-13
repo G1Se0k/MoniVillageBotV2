@@ -2,8 +2,7 @@ import { GuildMember } from 'discord.js';
 import { Guild } from '../database/models/Guild';
 import { Member } from '../database/models/Member';
 import { findMbtiGroupRoles } from '../database/models/Role';
-import { MbtiRolePrefix } from '../constants/mbti';
-import { resolveNewNickname, resolveDisplayType } from './mbtiInteraction';
+import { mbtiTypeToPrefix, resolveDisplayType, resolveNewNickname } from './mbtiUtils';
 
 export async function initMember(member: GuildMember) {
   const { guild, user } = member;
@@ -26,7 +25,7 @@ export async function initMember(member: GuildMember) {
   }
 
   const mbtiType = userRecord.mbti_type;
-  const prefix = (mbtiType === 'NONE' ? 'NO' : mbtiType.substring(0, 2)) as MbtiRolePrefix;
+  const prefix = mbtiTypeToPrefix(mbtiType);
   const targetRole = mbtiGroupRoles.find((r) => r.name.startsWith(prefix));
 
   try {

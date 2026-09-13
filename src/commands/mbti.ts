@@ -1,12 +1,9 @@
 import {
   ActionRowBuilder,
   ChatInputCommandInteraction,
-  Collection,
   EmbedBuilder,
-  Guild,
   MessageFlags,
   ModalBuilder,
-  Role,
   SlashCommandBuilder,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
@@ -15,9 +12,8 @@ import {
 } from 'discord.js';
 import { SlashCommand } from '../types/slashCommand';
 import { MbtiLog } from '../database/models/MbtiLog';
-import { Role as DbRole, findMbtiGroupRoles, registerRoleToDb } from '../database/models/Role';
 import { Member } from '../database/models/Member';
-import { MBTI_TYPES, MBTI_TYPE_SET, MBTI_ROLE_PREFIXES, MbtiRolePrefix, CUSTOM_IDS, GROUP_EMOJIS } from '../constants/mbti';
+import { MBTI_TYPES, MBTI_TYPE_SET, MBTI_ROLE_PREFIXES, CUSTOM_IDS, GROUP_EMOJIS } from '../constants/mbti';
 import { infoEmbed, warnEmbed, EMBED_COLORS } from '../utils/embed';
 import { handleCustomMbtiReset } from '../interactions/customMbtiModalHandler';
 import { mbtiTypeToPrefix } from '../interactions/mbtiUtils';
@@ -30,55 +26,6 @@ const SELECT_MENU_ROW = new ActionRowBuilder<StringSelectMenuBuilder>().addCompo
     .addOptions(MBTI_TYPES.map((type) => new StringSelectMenuOptionBuilder().setLabel(type).setValue(type))),
 );
 
-export type SyncStatus = 'db' | 'registered' | 'created' | 'recreated';
-
-export async function syncMbtiGroupRole(
-  guild: Guild,
-  prefix: MbtiRolePrefix,
-  dbRoles: DbRole[],
-  discordRoles: Collection<string, Role>,
-): Promise<SyncStatus> {
-  const dbRole = dbRoles.find((r) => r.name.startsWith(prefix));
-  const discordRole = discordRoles.find((r) => r.name.startsWith(prefix));
-
-  const boostRole = discordRoles.find((r) => r.tags?.premiumSubscriberRole === null);
-  const boostPosition = boostRole ? boostRole.position : 0;
-  const color = EMBED_COLORS[prefix];
-  const roleOptions = {
-    name: prefix,
-    color,
-    position: Math.max(1, boostPosition - 1),
-  };
-
-  if (dbRole && discordRole) {
-    await discordRole.edit({ color, position: Math.max(1, boostPosition - 1) });
-    console.log(`[ROLE] Updated Discord role "${discordRole.name}" (${discordRole.id}) color and position in guild ${guild.id}`);
-    return 'db';
-  }
-
-  if (dbRole && !discordRole) {
-    await dbRole.destroy();
-    const newRole = await guild.roles.create(roleOptions);
-    await registerRoleToDb(newRole.id, guild.id, newRole.name);
-    console.log(`[ROLE] Recreated Discord role "${newRole.name}" (${newRole.id}) and re-registered to DB in guild ${guild.id}`);
-    return 'recreated';
-  }
-
-  if (!dbRole && discordRole) {
-    await registerRoleToDb(discordRole.id, guild.id, discordRole.name);
-    console.log(`[ROLE] Registered existing Discord role "${discordRole.name}" (${discordRole.id}) to DB in guild ${guild.id}`);
-    return 'registered';
-  }
-
-  const newRole = await guild.roles.create(roleOptions);
-  await registerRoleToDb(newRole.id, guild.id, newRole.name);
-  console.log(`[ROLE] Created Discord role "${newRole.name}" (${newRole.id}) in guild ${guild.id}`);
-  return 'created';
-}
-
-export { findMbtiGroupRoles, MBTI_ROLE_PREFIXES };
-export type { MbtiRolePrefix };
-
 export const mbti: SlashCommand = {
   data: new SlashCommandBuilder()
     .setName('mbti')
@@ -88,7 +35,6 @@ export const mbti: SlashCommand = {
     .addSubcommand((sub) => sub.setName('커스텀초기화').setDescription('커스텀 MBTI를 초기화하고 이전 표준 MBTI로 되돌립니다.'))
     .addSubcommand((sub) => sub.setName('히스토리').setDescription('나의 MBTI 선택 히스토리를 조회합니다.'))
     .addSubcommand((sub) => sub.setName('서버통계').setDescription('서버의 MBTI 유형 분포를 조회합니다.')),
-  handlesDeferral: true,
   execute: async (_, interaction: ChatInputCommandInteraction) => {
     const { guild, user } = interaction;
     if (!guild) return;
@@ -96,8 +42,11 @@ export const mbti: SlashCommand = {
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === '설정') {
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-      await interaction.editReply({ content: '아래에서 나의 MBTI 유형을 선택하세요:', components: [SELECT_MENU_ROW] });
+      await interaction.reply({
+        content: '아래에서 나의 MBTI 유형을 선택하세요:',
+        components: [SELECT_MENU_ROW],
+        flags: MessageFlags.Ephemeral,
+      });
       return;
     }
 
@@ -134,9 +83,9 @@ export const mbti: SlashCommand = {
       return;
     }
 
-    if (subcommand === '히스토리') {
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
+    if (subcommand === '히스토리') {
       const history = await MbtiLog.findAll({
         where: { user_id: user.id, guild_id: guild.id },
         order: [['created_at', 'DESC']],
@@ -152,15 +101,12 @@ export const mbti: SlashCommand = {
         .map((h, i) => `${i + 1}. **${h.mbti_type}** — ${new Date(h.created_at).toLocaleString('ko-KR')}`)
         .join('\n');
 
-      const embed = infoEmbed(`${user.displayName}의 MBTI 히스토리`, list);
-      await interaction.editReply({ embeds: [embed] });
+      await interaction.editReply({ embeds: [infoEmbed(`${user.displayName}의 MBTI 히스토리`, list)] });
       console.log(`[MBTI] History viewed by ${user.tag} (${user.id}) in guild ${guild.id}`);
       return;
     }
 
     if (subcommand === '서버통계') {
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
       const users = await Member.findAll({ where: { guild_id: guild.id } });
 
       const total = users.length;
