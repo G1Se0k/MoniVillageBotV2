@@ -1,0 +1,17 @@
+{
+  "name": "@moni/shared",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "sequelize": "^6.37.8",
+    "mysql2": "^3.20.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

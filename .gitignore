@@ -5,6 +5,8 @@ src/.env
 
 # 빌드 결과물
 dist/
+*.tsbuildinfo
+.next/
 
 # 의존성
 node_modules/
