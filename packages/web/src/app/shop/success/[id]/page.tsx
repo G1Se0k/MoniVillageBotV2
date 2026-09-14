@@ -22,6 +22,9 @@ export default async function Success({ params }: SuccessProps) {
         <span className="font-medium">{item.name}</span> 를 획득했어요.
       </p>
       <div className="flex gap-3">
+        <Link href="/inventory" className="text-sm underline text-zinc-500">
+          인벤토리
+        </Link>
         <Link href="/shop" className="text-sm underline text-zinc-500">
           상점으로
         </Link>

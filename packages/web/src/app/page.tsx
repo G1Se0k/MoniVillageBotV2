@@ -40,12 +40,20 @@ export default async function Home({ searchParams }: HomeProps) {
               </button>
             </form>
           </div>
-          <Link
-            href="/shop"
-            className="rounded bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-sm font-medium"
-          >
-            상점 가기 →
-          </Link>
+          <div className="flex gap-3">
+            <Link
+              href="/shop"
+              className="rounded bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-sm font-medium"
+            >
+              상점 가기 →
+            </Link>
+            <Link
+              href="/inventory"
+              className="rounded border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm font-medium"
+            >
+              인벤토리
+            </Link>
+          </div>
         </div>
       ) : (
         <a
