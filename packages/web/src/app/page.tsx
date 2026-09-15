@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { readSession } from '@/lib/session';
-import { canAccessWallet, isGuildMember } from '@/lib/admin';
+import { canAccessWallet, getGuildMember } from '@/lib/admin';
 import { getGuildIcon } from '@/lib/guildIcon';
 
 const GUILD_INVITE_URL = 'https://discord.gg/56aT5q7JkS';
@@ -13,9 +13,11 @@ export default async function Home({ searchParams }: HomeProps) {
   const user = await readSession();
   const { login_error } = await searchParams;
   const guild = await getGuildIcon(256);
-  const [admin, member] = user
-    ? await Promise.all([canAccessWallet(user.id), isGuildMember(user.id)])
-    : [false, false];
+  const [admin, guildMember] = user
+    ? await Promise.all([canAccessWallet(user.id), getGuildMember(user.id)])
+    : [false, null];
+  const member = !!guildMember;
+  const displayName = guildMember?.nick ?? user?.username ?? '';
 
   const avatarUrl = user?.avatar
     ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64`
@@ -60,7 +62,7 @@ export default async function Home({ searchParams }: HomeProps) {
             )}
             <div className="flex-1 min-w-0">
               <p className="text-xs text-zinc-500 dark:text-zinc-400">환영합니다</p>
-              <p className="font-semibold truncate">{user.username}</p>
+              <p className="font-semibold truncate">{displayName}</p>
             </div>
             <form action="/api/auth/logout" method="post">
               <button
