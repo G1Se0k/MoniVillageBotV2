@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exchangeCodeForUser } from '@/lib/discord';
 import { consumeOauthState, createSession } from '@/lib/session';
+import { getAppOrigin } from '@/lib/appUrl';
 
 export async function GET(req: NextRequest) {
-  const { searchParams, origin } = req.nextUrl;
+  const { searchParams } = req.nextUrl;
+  const origin = getAppOrigin();
   const code = searchParams.get('code');
   const state = searchParams.get('state');
   const error = searchParams.get('error');

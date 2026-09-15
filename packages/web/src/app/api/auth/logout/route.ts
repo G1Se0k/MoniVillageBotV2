@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { clearSession } from '@/lib/session';
+import { getAppOrigin } from '@/lib/appUrl';
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   await clearSession();
-  return NextResponse.redirect(new URL('/', req.nextUrl.origin), { status: 303 });
+  return NextResponse.redirect(new URL('/', getAppOrigin()), { status: 303 });
 }
