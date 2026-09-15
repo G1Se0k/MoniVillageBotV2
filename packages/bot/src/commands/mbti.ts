@@ -39,7 +39,7 @@ export const mbti: SlashCommand = {
     .setName('mbti')
     .setDescription('MBTI 유형을 관리합니다.')
     .addSubcommand((sub) => sub.setName('설정').setDescription('나의 MBTI 유형을 선택합니다.'))
-    .addSubcommand((sub) => sub.setName('커스텀').setDescription('서버 부스터 전용: 나만의 커스텀 MBTI 유형을 설정합니다.'))
+    .addSubcommand((sub) => sub.setName('커스텀').setDescription('나만의 커스텀 MBTI 유형을 설정합니다. (서버 부스터 또는 이용권 필요)'))
     .addSubcommand((sub) => sub.setName('커스텀초기화').setDescription('커스텀 MBTI를 초기화하고 이전 표준 MBTI로 되돌립니다.'))
     .addSubcommand((sub) => sub.setName('히스토리').setDescription('나의 MBTI 선택 히스토리를 조회합니다.'))
     .addSubcommand((sub) => sub.setName('서버통계').setDescription('서버의 MBTI 유형 분포를 조회합니다.')),
@@ -59,11 +59,18 @@ export const mbti: SlashCommand = {
     }
 
     if (subcommand === '커스텀') {
-      const item = await Item.findOne({ where: { code: 'custom_mbti', active: true } });
-      const owned = item && await UserItem.findOne({ where: { user_id: user.id, item_id: item.id } });
-      if (!owned) {
+      const member = await guild.members.fetch(user.id);
+      let allowed = !!member.premiumSince;
+      if (!allowed) {
+        const item = await Item.findOne({ where: { code: 'custom_mbti', active: true } });
+        if (item) {
+          const owned = await UserItem.findOne({ where: { user_id: user.id, item_id: item.id } });
+          allowed = !!owned;
+        }
+      }
+      if (!allowed) {
         await interaction.reply({
-          embeds: [warnEmbed('커스텀 MBTI 이용권을 보유해야 사용할 수 있습니다. 상점에서 구매해주세요.')],
+          embeds: [warnEmbed('서버를 부스트하거나 상점에서 **커스텀 MBTI 이용권**을 구매해야 사용할 수 있습니다.')],
           flags: MessageFlags.Ephemeral,
         });
         return;
