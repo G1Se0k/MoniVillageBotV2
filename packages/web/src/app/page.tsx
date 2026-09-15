@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { readSession } from '@/lib/session';
+import { isGuildAdmin } from '@/lib/admin';
 import { getGuildIcon } from '@/lib/guildIcon';
 
 interface HomeProps {
@@ -10,6 +11,7 @@ export default async function Home({ searchParams }: HomeProps) {
   const user = await readSession();
   const { login_error } = await searchParams;
   const guild = await getGuildIcon(256);
+  const admin = user ? await isGuildAdmin(user.id) : false;
 
   const avatarUrl = user?.avatar
     ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64`
@@ -66,7 +68,7 @@ export default async function Home({ searchParams }: HomeProps) {
             </form>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className={`grid gap-2 ${admin ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <Link
               href="/shop"
               className="flex flex-col items-center gap-1 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 py-4 text-sm font-medium shadow-lg shadow-indigo-500/25 transition hover:-translate-y-0.5"
@@ -81,13 +83,15 @@ export default async function Home({ searchParams }: HomeProps) {
               <span className="text-xl">🎒</span>
               <span>인벤토리</span>
             </Link>
-            <Link
-              href="/wallet"
-              className="flex flex-col items-center gap-1 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-4 text-sm font-medium hover:border-amber-400 dark:hover:border-orange-500 transition hover:-translate-y-0.5"
-            >
-              <span className="text-xl">💰</span>
-              <span>지갑</span>
-            </Link>
+            {admin && (
+              <Link
+                href="/wallet"
+                className="flex flex-col items-center gap-1 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-4 text-sm font-medium hover:border-amber-400 dark:hover:border-orange-500 transition hover:-translate-y-0.5"
+              >
+                <span className="text-xl">💰</span>
+                <span>지갑</span>
+              </Link>
+            )}
           </div>
         </div>
       ) : (

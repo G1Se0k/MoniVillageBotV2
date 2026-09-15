@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Item, categoryLabel } from '@moni/shared';
 import { readSession } from '@/lib/session';
+import { isGuildAdmin } from '@/lib/admin';
 import { getBalance } from '@/lib/wallet';
 import { purchaseItem } from '@/lib/purchase';
 
@@ -21,9 +22,10 @@ export default async function Checkout({ params, searchParams }: CheckoutProps) 
   const { id } = await params;
   const { err } = await searchParams;
 
-  const [item, balance] = await Promise.all([
+  const [item, balance, admin] = await Promise.all([
     Item.findByPk(Number(id)),
     getBalance(user.id),
+    isGuildAdmin(user.id),
   ]);
   if (!item || !item.active) notFound();
   const affordable = balance >= item.price;
@@ -86,12 +88,14 @@ export default async function Checkout({ params, searchParams }: CheckoutProps) 
           >
             상점으로
           </Link>
-          <Link
-            href="/wallet"
-            className="rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-5 py-2 text-sm font-semibold shadow-md shadow-indigo-500/25 transition"
-          >
-            코인 충전
-          </Link>
+          {admin && (
+            <Link
+              href="/wallet"
+              className="rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-5 py-2 text-sm font-semibold shadow-md shadow-indigo-500/25 transition"
+            >
+              코인 충전
+            </Link>
+          )}
         </div>
       )}
     </main>

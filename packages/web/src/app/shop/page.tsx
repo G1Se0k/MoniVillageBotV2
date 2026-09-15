@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Item, UserItem, categoryLabel } from '@moni/shared';
 import { readSession } from '@/lib/session';
+import { isGuildAdmin } from '@/lib/admin';
 import { getBalance } from '@/lib/wallet';
 
 const ERR_MSG: Record<string, string> = {
@@ -20,10 +21,11 @@ export default async function Shop({ searchParams }: ShopProps) {
   const hideOwned = hideOwnedParam === '1';
   const activeCat = catParam && catParam !== 'all' ? catParam : 'all';
 
-  const [items, owned, balance] = await Promise.all([
+  const [items, owned, balance, admin] = await Promise.all([
     Item.findAll({ where: { active: true }, order: [['category', 'ASC'], ['id', 'ASC']] }),
     UserItem.findAll({ where: { user_id: user.id }, attributes: ['item_id'] }),
     getBalance(user.id),
+    isGuildAdmin(user.id),
   ]);
   const ownedIds = new Set(owned.map((o) => o.item_id));
 
@@ -63,12 +65,14 @@ export default async function Shop({ searchParams }: ShopProps) {
       <div className="flex items-center gap-3 rounded-full border border-white/60 dark:border-white/10 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-md px-4 py-2 shadow-sm">
         <span className="text-xs text-zinc-500 dark:text-zinc-400">보유 코인</span>
         <span className="font-semibold tabular-nums">{balance.toLocaleString()}</span>
-        <Link
-          href="/wallet"
-          className="text-xs rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 py-1 shadow-sm"
-        >
-          충전
-        </Link>
+        {admin && (
+          <Link
+            href="/wallet"
+            className="text-xs rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 py-1 shadow-sm"
+          >
+            충전
+          </Link>
+        )}
       </div>
 
       <nav className="flex flex-wrap justify-center gap-2">
