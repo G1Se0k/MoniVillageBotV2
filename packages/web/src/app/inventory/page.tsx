@@ -49,7 +49,7 @@ export default async function Inventory({ searchParams }: InventoryProps) {
           <p className="text-zinc-500">보유한 아이템이 없습니다.</p>
           <Link
             href="/shop"
-            className="inline-block mt-4 text-sm rounded-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white px-4 py-1.5 shadow-md shadow-orange-500/25"
+            className="inline-block mt-4 text-sm rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-1.5 shadow-md shadow-indigo-500/25"
           >
             상점 둘러보기 →
           </Link>
@@ -89,7 +89,7 @@ export default async function Inventory({ searchParams }: InventoryProps) {
                           <span className="font-semibold">{item.name}</span>
                         )}
                         {isSymbol && userItem.equipped && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-sm">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-sm">
                             장착 중
                           </span>
                         )}
@@ -102,7 +102,7 @@ export default async function Inventory({ searchParams }: InventoryProps) {
                             className={`w-full text-sm rounded-full px-3 py-1.5 transition ${
                               userItem.equipped
                                 ? 'border border-zinc-300 dark:border-zinc-700 bg-white/50 dark:bg-zinc-900/50 hover:border-amber-400'
-                                : 'bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white shadow-md shadow-orange-500/25'
+                                : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-md shadow-indigo-500/25'
                             }`}
                           >
                             {userItem.equipped ? '해제' : '장착'}

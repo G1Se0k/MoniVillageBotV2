@@ -64,7 +64,7 @@ export default async function Wallet({ searchParams }: WalletProps) {
               </div>
               <Link
                 href={`/wallet/topup/${pkg.coins}`}
-                className="mt-2 w-full text-sm text-center rounded-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white px-3 py-1.5 shadow-md shadow-orange-500/25"
+                className="mt-2 w-full text-sm text-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 py-1.5 shadow-md shadow-indigo-500/25"
               >
                 충전하기
               </Link>

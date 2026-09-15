@@ -65,7 +65,7 @@ export default async function Shop({ searchParams }: ShopProps) {
         <span className="font-semibold tabular-nums">{balance.toLocaleString()}</span>
         <Link
           href="/wallet"
-          className="text-xs rounded-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white px-3 py-1 shadow-sm"
+          className="text-xs rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 py-1 shadow-sm"
         >
           충전
         </Link>
@@ -80,7 +80,7 @@ export default async function Shop({ searchParams }: ShopProps) {
               href={buildHref({ cat: c })}
               className={`text-sm rounded-full px-4 py-1.5 border transition ${
                 active
-                  ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white border-transparent shadow-md shadow-orange-500/25'
+                  ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-transparent shadow-md shadow-indigo-500/25'
                   : 'border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md hover:border-amber-400'
               }`}
             >
@@ -94,7 +94,7 @@ export default async function Shop({ searchParams }: ShopProps) {
         href={buildHref({ hideOwned: !hideOwned })}
         className={`text-xs rounded-full px-3 py-1.5 border transition ${
           hideOwned
-            ? 'bg-orange-500 text-white border-orange-500'
+            ? 'bg-indigo-600 text-white border-indigo-600'
             : 'border-zinc-300 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md hover:border-amber-400'
         }`}
       >
@@ -144,13 +144,13 @@ export default async function Shop({ searchParams }: ShopProps) {
                         {item.price.toLocaleString()} 코인
                       </span>
                       {isOwned ? (
-                        <span className="text-xs text-center rounded-full py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                        <span className="text-sm text-center rounded-full px-3 py-1.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
                           보유 중
                         </span>
                       ) : affordable ? (
                         <Link
                           href={`/shop/checkout/${item.id}`}
-                          className="text-sm text-center rounded-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white px-3 py-1.5 shadow-md shadow-orange-500/25"
+                          className="text-sm text-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 py-1.5 shadow-md shadow-indigo-500/25"
                         >
                           구매하기
                         </Link>

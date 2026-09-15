@@ -73,7 +73,7 @@ export default async function Checkout({ params, searchParams }: CheckoutProps) 
           </Link>
           <button
             type="submit"
-            className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white px-5 py-2 text-sm font-semibold shadow-md shadow-orange-500/25 transition"
+            className="rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-5 py-2 text-sm font-semibold shadow-md shadow-indigo-500/25 transition"
           >
             구매하기
           </button>
@@ -88,7 +88,7 @@ export default async function Checkout({ params, searchParams }: CheckoutProps) 
           </Link>
           <Link
             href="/wallet"
-            className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white px-5 py-2 text-sm font-semibold shadow-md shadow-orange-500/25 transition"
+            className="rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-5 py-2 text-sm font-semibold shadow-md shadow-indigo-500/25 transition"
           >
             코인 충전
           </Link>
