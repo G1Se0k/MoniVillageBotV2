@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { Item, UserItem } from '@moni/shared';
 import { readSession } from './session';
+import { applySymbolToNickname } from './discordNickname';
 
 const parseItemId = (formData: FormData) => {
   const id = Number(formData.get('itemId'));
@@ -34,6 +35,11 @@ export async function equipItem(formData: FormData) {
     { where: { user_id: user.id, item_id: itemId } },
   );
 
+  if (target.category === 'nickname_symbol') {
+    const symbol = (target.payload as { symbol?: string } | undefined)?.symbol ?? null;
+    await applySymbolToNickname(user.id, symbol);
+  }
+
   revalidatePath('/inventory');
   redirect('/inventory');
 }
@@ -45,10 +51,16 @@ export async function unequipItem(formData: FormData) {
   const itemId = parseItemId(formData);
   if (itemId === null) redirect('/inventory?err=bad_item');
 
+  const target = await Item.findByPk(itemId);
+
   await UserItem.update(
     { equipped: false },
     { where: { user_id: user.id, item_id: itemId } },
   );
+
+  if (target?.category === 'nickname_symbol') {
+    await applySymbolToNickname(user.id, null);
+  }
 
   revalidatePath('/inventory');
   redirect('/inventory');

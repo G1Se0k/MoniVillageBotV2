@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, EmbedBuilder, MessageFlags, ModalSubmitInteraction } from 'discord.js';
 import { Op } from 'sequelize';
 import { EMBED_COLORS } from '../utils/embed';
-import { MbtiLog, Member, MBTI_TYPES, MBTI_TYPE_SET, CUSTOM_IDS, findMbtiGroupRoles } from '@moni/shared';
+import { MbtiLog, Member, MBTI_TYPES, MBTI_TYPE_SET, CUSTOM_IDS, findMbtiGroupRoles, getEquippedSymbol } from '@moni/shared';
 import { applyMbtiRoleAndNick, mbtiTypeToPrefix, resolveNewNickname } from './mbtiUtils';
 
 export async function handleCustomMbtiModal(interaction: ModalSubmitInteraction) {
@@ -52,7 +52,8 @@ export async function handleCustomMbtiModal(interaction: ModalSubmitInteraction)
   if (!isOwner) {
     try {
       const prefix = mbtiTypeToPrefix(existingRecord?.mbti_type ?? 'NONE');
-      const newNick = resolveNewNickname(member.nickname, member.displayName, customType, prefix);
+      const equippedSymbol = await getEquippedSymbol(user.id);
+      const newNick = resolveNewNickname(member.nickname, member.displayName, customType, prefix, undefined, equippedSymbol);
       await member.setNickname(newNick);
       nickUpdated = true;
       console.log(`[MBTI] Custom type "${customType}" nickname set to "${newNick}" for ${user.tag} (${user.id}) in guild ${guild.id}`);
