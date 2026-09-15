@@ -9,3 +9,4 @@ export * from './database/models/MbtiLog';
 export * from './database/models/NicknameLog';
 export * from './database/models/Item';
 export * from './database/models/UserItem';
+export * from './database/models/UserWallet';

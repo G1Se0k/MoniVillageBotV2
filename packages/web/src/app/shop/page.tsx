@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Item, UserItem } from '@moni/shared';
 import { readSession } from '@/lib/session';
+import { getBalance } from '@/lib/wallet';
 
 const ERR_MSG: Record<string, string> = {
   bad_item: '잘못된 아이템 요청',
@@ -17,15 +18,25 @@ export default async function Shop({ searchParams }: ShopProps) {
   if (!user) redirect('/');
   const { err } = await searchParams;
 
-  const [items, owned] = await Promise.all([
+  const [items, owned, balance] = await Promise.all([
     Item.findAll({ where: { active: true }, order: [['id', 'ASC']] }),
     UserItem.findAll({ where: { user_id: user.id }, attributes: ['item_id'] }),
+    getBalance(user.id),
   ]);
   const ownedIds = new Set(owned.map((o) => o.item_id));
 
   return (
     <main className="min-h-screen flex flex-col items-center p-8 gap-6 bg-zinc-50 dark:bg-black">
       <h1 className="text-3xl font-semibold">채팅 꾸미기 샵</h1>
+
+      <div className="flex items-center gap-4 text-sm">
+        <span className="text-zinc-500">보유 코인</span>
+        <span className="font-semibold">{balance.toLocaleString()}</span>
+        <Link href="/wallet" className="underline text-indigo-600 dark:text-indigo-400">
+          충전
+        </Link>
+      </div>
+
       {err && <p className="text-sm text-red-500">{ERR_MSG[err] ?? err}</p>}
 
       {items.length === 0 ? (
@@ -34,6 +45,7 @@ export default async function Shop({ searchParams }: ShopProps) {
         <ul className="w-full max-w-2xl grid gap-4 sm:grid-cols-2">
           {items.map((item) => {
             const isOwned = ownedIds.has(item.id);
+            const affordable = balance >= item.price;
             return (
               <li
                 key={item.id}
@@ -44,17 +56,19 @@ export default async function Shop({ searchParams }: ShopProps) {
                   <span className="text-xs text-zinc-500">{item.category}</span>
                 </div>
                 <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {item.price.toLocaleString()}원
+                  {item.price.toLocaleString()} 코인
                 </span>
                 {isOwned ? (
                   <span className="text-sm text-zinc-400">보유 중</span>
-                ) : (
+                ) : affordable ? (
                   <Link
                     href={`/shop/checkout/${item.id}`}
                     className="text-sm text-center rounded bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5"
                   >
                     구매하기
                   </Link>
+                ) : (
+                  <span className="text-sm text-center text-red-500">코인 부족</span>
                 )}
               </li>
             );

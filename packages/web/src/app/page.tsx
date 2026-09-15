@@ -53,6 +53,12 @@ export default async function Home({ searchParams }: HomeProps) {
             >
               인벤토리
             </Link>
+            <Link
+              href="/wallet"
+              className="rounded border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm font-medium"
+            >
+              지갑
+            </Link>
           </div>
         </div>
       ) : (

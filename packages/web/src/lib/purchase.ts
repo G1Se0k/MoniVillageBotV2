@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { Item, UserItem } from '@moni/shared';
+import { Item, UserItem, UserWallet, sequelize } from '@moni/shared';
 import { readSession } from './session';
 
 export async function purchaseItem(formData: FormData) {
@@ -14,11 +14,36 @@ export async function purchaseItem(formData: FormData) {
   const item = await Item.findByPk(itemId);
   if (!item || !item.active) redirect('/shop?err=unavailable');
 
-  // ponytail: 테스트 결제 — 게이트웨이 호출 없음, DB만 기록
-  await UserItem.findOrCreate({
-    where: { user_id: user.id, item_id: item.id },
-    defaults: { user_id: user.id, item_id: item.id, equipped: false },
-  });
+  let insufficient: boolean = false;
 
+  try {
+    await sequelize.transaction(async (t) => {
+      const [wallet] = await UserWallet.findOrCreate({
+        where: { user_id: user.id },
+        defaults: { user_id: user.id, balance: 0 },
+        transaction: t,
+        lock: t.LOCK.UPDATE,
+      });
+
+      const [, created] = await UserItem.findOrCreate({
+        where: { user_id: user.id, item_id: item.id },
+        defaults: { user_id: user.id, item_id: item.id, equipped: false },
+        transaction: t,
+      });
+      if (!created) return; // 이미 보유 — 코인 차감 없이 성공 처리
+
+      if (wallet.balance < item.price) {
+        insufficient = true;
+        throw new Error('rollback'); // 트랜잭션 롤백 (UserItem 삽입 취소)
+      }
+
+      wallet.balance -= item.price;
+      await wallet.save({ transaction: t });
+    });
+  } catch (e) {
+    if (!insufficient) throw e;
+  }
+
+  if (insufficient) redirect(`/shop/checkout/${item.id}?err=insufficient`);
   redirect(`/shop/success/${item.id}`);
 }
