@@ -1,0 +1,7 @@
+mirattic.com {
+    # Cloudflare "Full" SSL 모드와 함께 사용 — Caddy가 자체 서명 인증서를 발급.
+    # (Full strict 로 하려면 Cloudflare Origin CA 인증서를 별도로 마운트할 것)
+    tls internal
+    encode zstd gzip
+    reverse_proxy web:3000
+}
