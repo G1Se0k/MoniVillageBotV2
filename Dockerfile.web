@@ -1,0 +1,40 @@
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+COPY tsconfig.base.json tsconfig.json ./
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/web/package.json ./packages/web/
+RUN npm ci
+
+COPY packages/shared ./packages/shared
+COPY packages/web ./packages/web
+
+RUN npm -w @moni/shared run build
+
+# NEXT_PUBLIC_* 는 build 타임에 클라이언트 번들로 인라인됨
+ARG NEXT_PUBLIC_TOSS_CLIENT_KEY
+ENV NEXT_PUBLIC_TOSS_CLIENT_KEY=${NEXT_PUBLIC_TOSS_CLIENT_KEY}
+
+RUN npm -w @moni/web run build
+
+
+FROM node:22-alpine
+
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
+
+COPY package*.json ./
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/web/package.json ./packages/web/
+RUN npm ci --omit=dev --workspace=@moni/web --include-workspace-root
+
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+COPY --from=builder /app/packages/web/.next ./packages/web/.next
+COPY --from=builder /app/packages/web/public ./packages/web/public
+COPY --from=builder /app/packages/web/next.config.ts ./packages/web/
+
+EXPOSE 3000
+CMD ["npm", "-w", "@moni/web", "run", "start"]
