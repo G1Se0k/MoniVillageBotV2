@@ -20,6 +20,7 @@ const SEED_ITEMS = [
   { code: 'symbol_red_square', name: '🟥 빨강 사각', category: 'nickname_symbol', price: 100, payload: { symbol: '🟥' } },
   { code: 'symbol_green_square', name: '🟩 초록 사각', category: 'nickname_symbol', price: 100, payload: { symbol: '🟩' } },
   { code: 'symbol_blue_square', name: '🟦 파랑 사각', category: 'nickname_symbol', price: 100, payload: { symbol: '🟦' } },
+  { code: 'symbol_orange_square', name: '🟧 주황 사각', category: 'nickname_symbol', price: 100, payload: { symbol: '🟧' } },
   { code: 'symbol_black_square', name: '⬛ 검정 사각', category: 'nickname_symbol', price: 100, payload: { symbol: '⬛' } },
   { code: 'symbol_blue_diamond', name: '🔷 파랑 다이아', category: 'nickname_symbol', price: 100, payload: { symbol: '🔷' } },
   { code: 'symbol_white_square', name: '⬜ 흰색 사각', category: 'nickname_symbol', price: 100, payload: { symbol: '⬜' } },
