@@ -22,9 +22,8 @@ export default async function Home({ searchParams }: HomeProps) {
         <img
           src={guild.url}
           alt={guild.name}
-          width={128}
-          height={128}
-          className="rounded-full"
+          width={192}
+          height={192}
         />
       ) : (
         <h1 className="text-3xl font-semibold">Moni Village 채팅 꾸미기 샵</h1>
