@@ -19,7 +19,7 @@ export async function handleNicknameModal(interaction: ModalSubmitInteraction) {
   const mbtiType = userRecord?.mbti_type ?? 'NONE';
   const prefix = mbtiTypeToPrefix(mbtiType);
   const displayType = resolveDisplayType(member.nickname, member.displayName, mbtiType);
-  const newNick = resolveNewNickname(member.nickname, member.displayName, displayType, prefix, newName);
+  const newNick = resolveNewNickname(member.nickname, member.displayName, displayType, prefix, newName, undefined, !!member.premiumSince);
 
   try {
     await Promise.all([

@@ -53,7 +53,7 @@ export async function handleCustomMbtiModal(interaction: ModalSubmitInteraction)
     try {
       const prefix = mbtiTypeToPrefix(existingRecord?.mbti_type ?? 'NONE');
       const equippedSymbol = await getEquippedSymbol(user.id);
-      const newNick = resolveNewNickname(member.nickname, member.displayName, customType, prefix, undefined, equippedSymbol);
+      const newNick = resolveNewNickname(member.nickname, member.displayName, customType, prefix, undefined, equippedSymbol, !!member.premiumSince);
       await member.setNickname(newNick);
       nickUpdated = true;
       console.log(`[MBTI] Custom type "${customType}" nickname set to "${newNick}" for ${user.tag} (${user.id}) in guild ${guild.id}`);

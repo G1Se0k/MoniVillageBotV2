@@ -41,7 +41,7 @@ export async function initMember(member: GuildMember) {
   }
 
   const displayType = resolveDisplayType(member.nickname, member.displayName, mbtiType);
-  const newNick = resolveNewNickname(member.nickname, member.displayName, displayType, prefix);
+  const newNick = resolveNewNickname(member.nickname, member.displayName, displayType, prefix, undefined, undefined, !!member.premiumSince);
   try {
     await member.setNickname(newNick);
     console.log(`[INIT] Nickname set to "${newNick}" for ${user.id} in guild ${guild.id}`);

@@ -9,7 +9,8 @@ import {
   getEquippedSymbol,
 } from '@moni/shared';
 
-const OUR_EMOJI_SET = new Set(Object.values(GROUP_EMOJIS));
+const BOOSTER_EMOJI = '🟪';
+const OUR_EMOJI_SET = new Set([...Object.values(GROUP_EMOJIS), BOOSTER_EMOJI]);
 
 export function mbtiTypeToPrefix(mbtiType: string): MbtiRolePrefix {
   const prefix = mbtiType.substring(0, 2);
@@ -30,11 +31,12 @@ export function resolveNewNickname(
   prefix: MbtiRolePrefix,
   overrideName?: string,
   equippedSymbol?: string | null,
+  isBooster?: boolean,
 ): string {
   const source = currentNick ?? displayName;
   const emoji = equippedSymbol
     ?? (source.match(/\p{Emoji_Presentation}/gu) ?? []).find((e) => !OUR_EMOJI_SET.has(e))
-    ?? GROUP_EMOJIS[prefix];
+    ?? (isBooster ? BOOSTER_EMOJI : GROUP_EMOJIS[prefix]);
 
   let baseName: string;
   if (overrideName) {
@@ -68,7 +70,7 @@ export async function applyMbtiRoleAndNick(
   const staleRoleIds = mbtiGroupRoles.map((r) => r.role_id).filter((id) => member.roles.cache.has(id));
   const displayType = mbtiType === 'NONE' ? 'BABO' : mbtiType;
   const equippedSymbol = await getEquippedSymbol(member.id);
-  const newNick = resolveNewNickname(member.nickname, member.displayName, displayType, prefix, undefined, equippedSymbol);
+  const newNick = resolveNewNickname(member.nickname, member.displayName, displayType, prefix, undefined, equippedSymbol, !!member.premiumSince);
 
   await Promise.all([
     ...(staleRoleIds.length > 0 ? [member.roles.remove(staleRoleIds)] : []),

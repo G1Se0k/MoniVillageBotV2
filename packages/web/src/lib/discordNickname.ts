@@ -7,14 +7,16 @@ function mbtiPrefix(mbtiType: string): MbtiRolePrefix {
   return (MBTI_ROLE_PREFIXES as readonly string[]).includes(p) ? (p as MbtiRolePrefix) : 'NO';
 }
 
-async function fetchNick(userId: string, guildId: string, token: string): Promise<string | null> {
+interface MemberInfo { nick: string | null; booster: boolean; }
+
+async function fetchMember(userId: string, guildId: string, token: string): Promise<MemberInfo | null> {
   const res = await fetch(`${API}/guilds/${guildId}/members/${userId}`, {
     headers: { Authorization: `Bot ${token}` },
     cache: 'no-store',
   });
   if (!res.ok) return null;
-  const data = (await res.json()) as { nick?: string | null };
-  return data.nick ?? null;
+  const data = (await res.json()) as { nick?: string | null; premium_since?: string | null };
+  return { nick: data.nick ?? null, booster: !!data.premium_since };
 }
 
 async function patchNick(userId: string, guildId: string, token: string, nick: string) {
@@ -41,15 +43,20 @@ export async function applySymbolToNickname(userId: string, symbol: string | nul
     return;
   }
 
+  const info = await fetchMember(userId, guildId, token);
+  if (!info?.nick) return;
+
   let effective = symbol;
   if (!effective) {
-    const member = await Member.findOne({ where: { user_id: userId, guild_id: guildId } });
-    effective = member ? GROUP_EMOJIS[mbtiPrefix(member.mbti_type)] : GROUP_EMOJIS.NO;
+    if (info.booster) {
+      effective = '🟪';
+    } else {
+      const member = await Member.findOne({ where: { user_id: userId, guild_id: guildId } });
+      effective = member ? GROUP_EMOJIS[mbtiPrefix(member.mbti_type)] : GROUP_EMOJIS.NO;
+    }
   }
 
-  const currentNick = await fetchNick(userId, guildId, token);
-  if (!currentNick) return;
-
+  const currentNick = info.nick;
   const first = currentNick.indexOf(' ');
   const last = currentNick.lastIndexOf(' ');
   if (first === -1 || last === first) return;
