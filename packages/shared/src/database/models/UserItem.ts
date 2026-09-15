@@ -55,6 +55,7 @@ UserItem.init(
   },
   {
     sequelize,
+    modelName: 'UserItem',
     tableName: 'user_items',
     freezeTableName: true,
     timestamps: false,

@@ -72,6 +72,7 @@ Item.init(
   },
   {
     sequelize,
+    modelName: 'Item',
     tableName: 'items',
     freezeTableName: true,
     timestamps: false,

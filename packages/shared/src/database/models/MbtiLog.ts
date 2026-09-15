@@ -50,6 +50,7 @@ MbtiLog.init(
   },
   {
     sequelize,
+    modelName: 'MbtiLog',
     tableName: 'mbti_logs',
     freezeTableName: true,
     timestamps: false,

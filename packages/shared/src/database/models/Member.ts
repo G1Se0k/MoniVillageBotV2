@@ -39,6 +39,7 @@ Member.init(
   },
   {
     sequelize,
+    modelName: 'Member',
     tableName: 'members',
     freezeTableName: true,
     timestamps: false,

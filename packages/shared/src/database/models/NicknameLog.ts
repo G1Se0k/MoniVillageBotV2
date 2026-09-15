@@ -50,6 +50,7 @@ NicknameLog.init(
   },
   {
     sequelize,
+    modelName: 'NicknameLog',
     tableName: 'nickname_logs',
     freezeTableName: true,
     timestamps: false,

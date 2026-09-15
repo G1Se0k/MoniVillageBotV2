@@ -27,6 +27,7 @@ UserWallet.init(
   },
   {
     sequelize,
+    modelName: 'UserWallet',
     tableName: 'user_wallets',
     freezeTableName: true,
     timestamps: false,

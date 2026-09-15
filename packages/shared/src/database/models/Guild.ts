@@ -19,6 +19,7 @@ Guild.init(
   },
   {
     sequelize,
+    modelName: 'Guild',
     tableName: 'guilds',
     freezeTableName: true,
     timestamps: false,
