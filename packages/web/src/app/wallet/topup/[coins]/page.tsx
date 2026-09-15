@@ -19,12 +19,12 @@ export default async function Topup({ params }: TopupProps) {
   const price = packagePrice(coins);
   if (!price) notFound();
 
-  const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
+  const clientKey = process.env.TOSS_CLIENT_KEY;
   if (!clientKey) {
     return (
       <main className="min-h-screen flex items-center justify-center p-8">
         <p className="text-sm text-red-500">
-          NEXT_PUBLIC_TOSS_CLIENT_KEY 환경변수가 설정되지 않았습니다.
+          TOSS_CLIENT_KEY 환경변수가 설정되지 않았습니다.
         </p>
       </main>
     );

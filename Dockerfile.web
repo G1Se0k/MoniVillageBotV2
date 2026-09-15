@@ -13,10 +13,6 @@ COPY packages/web ./packages/web
 
 RUN npm -w @moni/shared run build
 
-# NEXT_PUBLIC_* 는 build 타임에 클라이언트 번들로 인라인됨
-ARG NEXT_PUBLIC_TOSS_CLIENT_KEY
-ENV NEXT_PUBLIC_TOSS_CLIENT_KEY=${NEXT_PUBLIC_TOSS_CLIENT_KEY}
-
 RUN npm -w @moni/web run build
 
 

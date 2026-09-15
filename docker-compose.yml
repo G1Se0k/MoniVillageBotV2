@@ -10,8 +10,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
-      args:
-        NEXT_PUBLIC_TOSS_CLIENT_KEY: ${NEXT_PUBLIC_TOSS_CLIENT_KEY}
     container_name: monivillagebot-web
     env_file:
       - .env
