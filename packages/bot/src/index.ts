@@ -7,12 +7,14 @@ import { handleNicknameModal } from './interactions/nicknameModalHandler';
 import { handleCustomMbtiModal } from './interactions/customMbtiModalHandler';
 import { handleGuildMemberAdd } from './interactions/guildMemberAddHandler';
 import { handleRoleDelete } from './interactions/roleDeleteHandler';
+import { registerCoinRewards } from './interactions/coinRewards';
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildVoiceStates,
   ],
 });
 
@@ -54,5 +56,7 @@ client.on('interactionCreate', async (interaction) => {
 
 client.on('guildMemberAdd', handleGuildMemberAdd);
 client.on('roleDelete', handleRoleDelete);
+
+registerCoinRewards(client);
 
 void client.login(process.env.TOKEN);
