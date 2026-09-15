@@ -19,6 +19,8 @@ import {
   MBTI_ROLE_PREFIXES,
   CUSTOM_IDS,
   GROUP_EMOJIS,
+  Item,
+  UserItem,
 } from '@moni/shared';
 import { infoEmbed, warnEmbed, EMBED_COLORS } from '../utils/embed';
 import { handleCustomMbtiReset } from '../interactions/customMbtiModalHandler';
@@ -57,10 +59,11 @@ export const mbti: SlashCommand = {
     }
 
     if (subcommand === '커스텀') {
-      const member = await guild.members.fetch(user.id);
-      if (!member.premiumSince) {
+      const item = await Item.findOne({ where: { code: 'custom_mbti', active: true } });
+      const owned = item && await UserItem.findOne({ where: { user_id: user.id, item_id: item.id } });
+      if (!owned) {
         await interaction.reply({
-          embeds: [warnEmbed('서버 부스터만 사용할 수 있는 기능입니다. 서버를 부스트하면 커스텀 MBTI를 설정할 수 있습니다!')],
+          embeds: [warnEmbed('커스텀 MBTI 이용권을 보유해야 사용할 수 있습니다. 상점에서 구매해주세요.')],
           flags: MessageFlags.Ephemeral,
         });
         return;
