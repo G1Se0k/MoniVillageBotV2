@@ -10,13 +10,14 @@ const ERR_MSG: Record<string, string> = {
 };
 
 interface ShopProps {
-  searchParams: Promise<{ err?: string }>;
+  searchParams: Promise<{ err?: string; hideOwned?: string }>;
 }
 
 export default async function Shop({ searchParams }: ShopProps) {
   const user = await readSession();
   if (!user) redirect('/');
-  const { err } = await searchParams;
+  const { err, hideOwned: hideOwnedParam } = await searchParams;
+  const hideOwned = hideOwnedParam === '1';
 
   const [items, owned, balance] = await Promise.all([
     Item.findAll({ where: { active: true }, order: [['category', 'ASC'], ['id', 'ASC']] }),
@@ -24,9 +25,10 @@ export default async function Shop({ searchParams }: ShopProps) {
     getBalance(user.id),
   ]);
   const ownedIds = new Set(owned.map((o) => o.item_id));
+  const visibleItems = hideOwned ? items.filter((i) => !ownedIds.has(i.id)) : items;
 
   const grouped = new Map<string, Item[]>();
-  for (const item of items) {
+  for (const item of visibleItems) {
     const list = grouped.get(item.category) ?? [];
     list.push(item);
     grouped.set(item.category, list);
@@ -44,10 +46,23 @@ export default async function Shop({ searchParams }: ShopProps) {
         </Link>
       </div>
 
+      <Link
+        href={hideOwned ? '/shop' : '/shop?hideOwned=1'}
+        className={`text-xs rounded px-3 py-1.5 border ${
+          hideOwned
+            ? 'bg-indigo-600 text-white border-indigo-600'
+            : 'border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400'
+        }`}
+      >
+        {hideOwned ? '전체 보기' : '미보유만 보기'}
+      </Link>
+
       {err && <p className="text-sm text-red-500">{ERR_MSG[err] ?? err}</p>}
 
-      {items.length === 0 ? (
-        <p className="text-zinc-500">등록된 아이템이 없습니다.</p>
+      {visibleItems.length === 0 ? (
+        <p className="text-zinc-500">
+          {hideOwned ? '미보유 아이템이 없습니다.' : '등록된 아이템이 없습니다.'}
+        </p>
       ) : (
         <div className="w-full max-w-3xl flex flex-col gap-8">
           {[...grouped.entries()].map(([category, catItems]) => (
