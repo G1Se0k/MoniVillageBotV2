@@ -29,25 +29,32 @@ export default async function Checkout({ params, searchParams }: CheckoutProps) 
   const affordable = balance >= item.price;
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-8 gap-6 bg-zinc-50 dark:bg-black">
-      <h1 className="text-2xl font-semibold">구매 확인</h1>
+    <main className="min-h-screen flex flex-col items-center justify-center p-6 gap-6">
+      <header className="flex flex-col items-center gap-2">
+        <p className="text-xs uppercase tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
+          Moni Village
+        </p>
+        <h1 className="text-2xl font-bold tracking-tight">구매 확인</h1>
+      </header>
 
-      <div className="rounded border border-zinc-200 dark:border-zinc-800 p-6 w-full max-w-md flex flex-col gap-3 bg-white dark:bg-zinc-900">
+      <div className="rounded-2xl border border-white/60 dark:border-white/10 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-md p-6 w-full max-w-md flex flex-col gap-3 shadow-lg shadow-orange-500/10">
         <div className="flex justify-between">
           <span className="text-zinc-500">아이템</span>
-          <span className="font-medium">{item.name}</span>
+          <span className="font-semibold">{item.name}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-zinc-500">카테고리</span>
           <span>{categoryLabel(item.category)}</span>
         </div>
-        <div className="flex justify-between border-t border-zinc-200 dark:border-zinc-800 pt-3">
+        <div className="flex justify-between border-t border-zinc-200/70 dark:border-zinc-800/70 pt-3">
           <span className="text-zinc-500">가격</span>
-          <span className="font-semibold">{item.price.toLocaleString()} 코인</span>
+          <span className="font-bold tabular-nums bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">
+            {item.price.toLocaleString()} 코인
+          </span>
         </div>
         <div className="flex justify-between">
           <span className="text-zinc-500">보유 코인</span>
-          <span className={affordable ? '' : 'text-red-500'}>
+          <span className={`tabular-nums ${affordable ? '' : 'text-red-500'}`}>
             {balance.toLocaleString()} 코인
           </span>
         </div>
@@ -60,13 +67,13 @@ export default async function Checkout({ params, searchParams }: CheckoutProps) 
           <input type="hidden" name="itemId" value={item.id} />
           <Link
             href="/shop"
-            className="rounded border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm"
+            className="rounded-full border border-zinc-300 dark:border-zinc-700 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md px-4 py-2 text-sm hover:border-amber-400 transition"
           >
             취소
           </Link>
           <button
             type="submit"
-            className="rounded bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-sm font-medium"
+            className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white px-5 py-2 text-sm font-semibold shadow-md shadow-orange-500/25 transition"
           >
             구매하기
           </button>
@@ -75,13 +82,13 @@ export default async function Checkout({ params, searchParams }: CheckoutProps) 
         <div className="flex gap-3">
           <Link
             href="/shop"
-            className="rounded border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm"
+            className="rounded-full border border-zinc-300 dark:border-zinc-700 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md px-4 py-2 text-sm hover:border-amber-400 transition"
           >
             상점으로
           </Link>
           <Link
             href="/wallet"
-            className="rounded bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-sm font-medium"
+            className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white px-5 py-2 text-sm font-semibold shadow-md shadow-orange-500/25 transition"
           >
             코인 충전
           </Link>

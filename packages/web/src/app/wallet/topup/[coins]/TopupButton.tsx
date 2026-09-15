@@ -58,7 +58,7 @@ export function TopupButton({ coins, amount, customerKey, clientKey }: Props) {
         type="button"
         onClick={onPay}
         disabled={!ready || busy}
-        className="rounded bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-sm font-medium disabled:opacity-50"
+        className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white px-5 py-2 text-sm font-semibold shadow-md shadow-orange-500/25 disabled:opacity-50 transition"
       >
         {busy ? '결제 창 여는 중…' : ready ? '결제하기 (테스트)' : 'SDK 로딩 중…'}
       </button>

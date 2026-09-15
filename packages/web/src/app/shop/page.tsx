@@ -65,7 +65,7 @@ export default async function Shop({ searchParams }: ShopProps) {
         <span className="font-semibold tabular-nums">{balance.toLocaleString()}</span>
         <Link
           href="/wallet"
-          className="text-xs rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 py-1 shadow-sm"
+          className="text-xs rounded-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white px-3 py-1 shadow-sm"
         >
           충전
         </Link>
@@ -80,8 +80,8 @@ export default async function Shop({ searchParams }: ShopProps) {
               href={buildHref({ cat: c })}
               className={`text-sm rounded-full px-4 py-1.5 border transition ${
                 active
-                  ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-transparent shadow-md shadow-indigo-500/25'
-                  : 'border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md hover:border-indigo-400'
+                  ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white border-transparent shadow-md shadow-orange-500/25'
+                  : 'border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md hover:border-amber-400'
               }`}
             >
               {c === 'all' ? '전체' : categoryLabel(c)}
@@ -94,8 +94,8 @@ export default async function Shop({ searchParams }: ShopProps) {
         href={buildHref({ hideOwned: !hideOwned })}
         className={`text-xs rounded-full px-3 py-1.5 border transition ${
           hideOwned
-            ? 'bg-indigo-600 text-white border-indigo-600'
-            : 'border-zinc-300 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md hover:border-indigo-400'
+            ? 'bg-orange-500 text-white border-orange-500'
+            : 'border-zinc-300 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md hover:border-amber-400'
         }`}
       >
         {hideOwned ? '전체 보기' : '미보유만 보기'}
@@ -133,7 +133,7 @@ export default async function Shop({ searchParams }: ShopProps) {
                   return (
                     <li
                       key={item.id}
-                      className="rounded-2xl border border-white/60 dark:border-white/10 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-md p-4 flex flex-col gap-2 shadow-lg shadow-indigo-500/5 transition hover:-translate-y-0.5 hover:shadow-indigo-500/10"
+                      className="rounded-2xl border border-white/60 dark:border-white/10 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-md p-4 flex flex-col gap-2 shadow-lg shadow-orange-500/5 transition hover:-translate-y-0.5 hover:shadow-orange-500/10"
                     >
                       {isSymbol && symbol ? (
                         <span className="text-4xl text-center py-2">{symbol}</span>
@@ -150,7 +150,7 @@ export default async function Shop({ searchParams }: ShopProps) {
                       ) : affordable ? (
                         <Link
                           href={`/shop/checkout/${item.id}`}
-                          className="text-sm text-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 py-1.5 shadow-md shadow-indigo-500/25"
+                          className="text-sm text-center rounded-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white px-3 py-1.5 shadow-md shadow-orange-500/25"
                         >
                           구매하기
                         </Link>
@@ -166,7 +166,7 @@ export default async function Shop({ searchParams }: ShopProps) {
         </div>
       )}
 
-      <Link href="/" className="text-sm text-zinc-500 hover:text-indigo-500 transition">
+      <Link href="/" className="text-sm text-zinc-500 hover:text-orange-500 transition">
         ← 홈으로
       </Link>
     </main>
