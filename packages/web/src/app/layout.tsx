@@ -14,11 +14,26 @@ const geistMono = Geist_Mono({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const guild = await getGuildIcon(256);
+  const guild = await getGuildIcon(512);
+  const title = "모니마을";
+  const description = "모니마을 채팅 꾸미기 샵";
   return {
-    title: "모니마을",
-    description: "모니마을 채팅 꾸미기 샵",
+    title,
+    description,
     icons: guild?.url ? { icon: guild.url } : undefined,
+    openGraph: {
+      title,
+      description,
+      siteName: title,
+      type: "website",
+      images: guild?.url ? [guild.url] : undefined,
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+      images: guild?.url ? [guild.url] : undefined,
+    },
   };
 }
 
