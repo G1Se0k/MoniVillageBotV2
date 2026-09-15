@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { readSession } from '@/lib/session';
-import { canAccessWallet } from '@/lib/admin';
+import { canAccessWallet, isGuildMember } from '@/lib/admin';
 import { getGuildIcon } from '@/lib/guildIcon';
+
+const GUILD_INVITE_URL = 'https://discord.gg/56aT5q7JkS';
 
 interface HomeProps {
   searchParams: Promise<{ login_error?: string }>;
@@ -11,7 +13,9 @@ export default async function Home({ searchParams }: HomeProps) {
   const user = await readSession();
   const { login_error } = await searchParams;
   const guild = await getGuildIcon(256);
-  const admin = user ? await canAccessWallet(user.id) : false;
+  const [admin, member] = user
+    ? await Promise.all([canAccessWallet(user.id), isGuildMember(user.id)])
+    : [false, false];
 
   const avatarUrl = user?.avatar
     ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64`
@@ -68,31 +72,47 @@ export default async function Home({ searchParams }: HomeProps) {
             </form>
           </div>
 
-          <div className={`grid gap-2 ${admin ? 'grid-cols-3' : 'grid-cols-2'}`}>
-            <Link
-              href="/shop"
-              className="flex flex-col items-center gap-1 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 py-4 text-sm font-medium shadow-lg shadow-indigo-500/25 transition hover:-translate-y-0.5"
-            >
-              <span className="text-xl">🛍️</span>
-              <span>상점</span>
-            </Link>
-            <Link
-              href="/inventory"
-              className="flex flex-col items-center gap-1 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-4 text-sm font-medium hover:border-amber-400 dark:hover:border-orange-500 transition hover:-translate-y-0.5"
-            >
-              <span className="text-xl">🎒</span>
-              <span>인벤토리</span>
-            </Link>
-            {admin && (
+          {member ? (
+            <div className={`grid gap-2 ${admin ? 'grid-cols-3' : 'grid-cols-2'}`}>
               <Link
-                href="/wallet"
+                href="/shop"
+                className="flex flex-col items-center gap-1 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 py-4 text-sm font-medium shadow-lg shadow-indigo-500/25 transition hover:-translate-y-0.5"
+              >
+                <span className="text-xl">🛍️</span>
+                <span>상점</span>
+              </Link>
+              <Link
+                href="/inventory"
                 className="flex flex-col items-center gap-1 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-4 text-sm font-medium hover:border-amber-400 dark:hover:border-orange-500 transition hover:-translate-y-0.5"
               >
-                <span className="text-xl">💰</span>
-                <span>지갑</span>
+                <span className="text-xl">🎒</span>
+                <span>인벤토리</span>
               </Link>
-            )}
-          </div>
+              {admin && (
+                <Link
+                  href="/wallet"
+                  className="flex flex-col items-center gap-1 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-4 text-sm font-medium hover:border-amber-400 dark:hover:border-orange-500 transition hover:-translate-y-0.5"
+                >
+                  <span className="text-xl">💰</span>
+                  <span>지갑</span>
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center">
+                모니마을 서버에 참여해야 이용할 수 있어요.
+              </p>
+              <a
+                href={GUILD_INVITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-6 py-3 text-sm font-semibold shadow-lg shadow-indigo-500/30 transition hover:-translate-y-0.5"
+              >
+                서버 참여하기
+              </a>
+            </div>
+          )}
         </div>
       ) : (
         <a
