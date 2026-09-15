@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { readSession } from '@/lib/session';
 import { packagePrice } from '@/lib/wallet';
-import { topupWallet } from '@/lib/topup';
+import { TopupButton } from './TopupButton';
 
 interface TopupProps {
   params: Promise<{ coins: string }>;
@@ -16,6 +16,17 @@ export default async function Topup({ params }: TopupProps) {
   const coins = Number(coinsStr);
   const price = packagePrice(coins);
   if (!price) notFound();
+
+  const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
+  if (!clientKey) {
+    return (
+      <main className="min-h-screen flex items-center justify-center p-8">
+        <p className="text-sm text-red-500">
+          NEXT_PUBLIC_TOSS_CLIENT_KEY 환경변수가 설정되지 않았습니다.
+        </p>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-8 gap-6 bg-zinc-50 dark:bg-black">
@@ -33,24 +44,23 @@ export default async function Topup({ params }: TopupProps) {
       </div>
 
       <p className="text-xs text-amber-600 dark:text-amber-400">
-        ⚠ 테스트 모드 — 실제 결제되지 않습니다.
+        ⚠ 테스트 모드 — 실제 결제되지 않습니다. 카드번호 4330-1234-1234-1234 등 테스트 카드로 진행.
       </p>
 
-      <form action={topupWallet} className="flex gap-3">
-        <input type="hidden" name="coins" value={coins} />
+      <div className="flex gap-3 items-center">
         <Link
           href="/wallet"
           className="rounded border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm"
         >
           취소
         </Link>
-        <button
-          type="submit"
-          className="rounded bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-sm font-medium"
-        >
-          결제하기 (테스트)
-        </button>
-      </form>
+        <TopupButton
+          coins={coins}
+          amount={price}
+          customerKey={user.id}
+          clientKey={clientKey}
+        />
+      </div>
     </main>
   );
 }

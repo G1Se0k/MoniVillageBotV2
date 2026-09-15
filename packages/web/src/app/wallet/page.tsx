@@ -5,6 +5,12 @@ import { getBalance, COIN_PACKAGES } from '@/lib/wallet';
 
 const ERR_MSG: Record<string, string> = {
   bad_package: '잘못된 패키지',
+  missing_params: '결제 파라미터 누락',
+  bad_order: '주문 ID 형식 오류',
+  amount_mismatch: '결제 금액 불일치',
+  PAY_PROCESS_CANCELED: '결제가 취소되었습니다',
+  USER_CANCEL: '결제가 취소되었습니다',
+  PAY_FAILED: '결제 실패',
 };
 
 interface WalletProps {
