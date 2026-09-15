@@ -15,7 +15,7 @@ export async function getGuildMember(userId: string): Promise<GuildMemberInfo | 
   if (!token || !guildId) return { nick: null };
   const res = await fetch(`${API}/guilds/${guildId}/members/${userId}`, {
     headers: { Authorization: `Bot ${token}` },
-    next: { revalidate: 60 },
+    cache: 'no-store',
   });
   if (!res.ok) return null;
   const data = (await res.json()) as { nick?: string | null };

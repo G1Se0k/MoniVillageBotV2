@@ -26,8 +26,7 @@ export default async function Inventory({ searchParams }: InventoryProps) {
 
   const grouped = new Map<string, Array<{ userItem: UserItem; item: Item }>>();
   for (const u of owned) {
-    const item = u.Item;
-    if (!item) continue;
+    const item = u.Item!;
     const list = grouped.get(item.category) ?? [];
     list.push({ userItem: u, item });
     grouped.set(item.category, list);

@@ -43,6 +43,10 @@ export async function applySymbolToNickname(userId: string, symbol: string | nul
     return;
   }
 
+  // ponytail: 언장착 폴백에 DB Member가 필요할 수 있어 Discord fetch와 병렬 시작
+  const memberPromise = symbol
+    ? null
+    : Member.findOne({ where: { user_id: userId, guild_id: guildId } });
   const info = await fetchMember(userId, guildId, token);
   if (!info?.nick) return;
 
@@ -51,7 +55,7 @@ export async function applySymbolToNickname(userId: string, symbol: string | nul
     if (info.booster) {
       effective = '🟪';
     } else {
-      const member = await Member.findOne({ where: { user_id: userId, guild_id: guildId } });
+      const member = await memberPromise;
       effective = member ? GROUP_EMOJIS[mbtiPrefix(member.mbti_type)] : GROUP_EMOJIS.NO;
     }
   }
