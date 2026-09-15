@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Item } from '@moni/shared';
+import { Item, categoryLabel } from '@moni/shared';
 import { readSession } from '@/lib/session';
 import { getBalance } from '@/lib/wallet';
 import { purchaseItem } from '@/lib/purchase';
@@ -39,7 +39,7 @@ export default async function Checkout({ params, searchParams }: CheckoutProps) 
         </div>
         <div className="flex justify-between">
           <span className="text-zinc-500">카테고리</span>
-          <span>{item.category}</span>
+          <span>{categoryLabel(item.category)}</span>
         </div>
         <div className="flex justify-between border-t border-zinc-200 dark:border-zinc-800 pt-3">
           <span className="text-zinc-500">가격</span>

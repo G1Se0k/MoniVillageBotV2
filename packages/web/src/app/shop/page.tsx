@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Item, UserItem } from '@moni/shared';
+import { Item, UserItem, categoryLabel } from '@moni/shared';
 import { readSession } from '@/lib/session';
 import { getBalance } from '@/lib/wallet';
 
@@ -19,11 +19,18 @@ export default async function Shop({ searchParams }: ShopProps) {
   const { err } = await searchParams;
 
   const [items, owned, balance] = await Promise.all([
-    Item.findAll({ where: { active: true }, order: [['id', 'ASC']] }),
+    Item.findAll({ where: { active: true }, order: [['category', 'ASC'], ['id', 'ASC']] }),
     UserItem.findAll({ where: { user_id: user.id }, attributes: ['item_id'] }),
     getBalance(user.id),
   ]);
   const ownedIds = new Set(owned.map((o) => o.item_id));
+
+  const grouped = new Map<string, Item[]>();
+  for (const item of items) {
+    const list = grouped.get(item.category) ?? [];
+    list.push(item);
+    grouped.set(item.category, list);
+  }
 
   return (
     <main className="min-h-screen flex flex-col items-center p-8 gap-6 bg-zinc-50 dark:bg-black">
@@ -42,38 +49,44 @@ export default async function Shop({ searchParams }: ShopProps) {
       {items.length === 0 ? (
         <p className="text-zinc-500">등록된 아이템이 없습니다.</p>
       ) : (
-        <ul className="w-full max-w-2xl grid gap-4 sm:grid-cols-2">
-          {items.map((item) => {
-            const isOwned = ownedIds.has(item.id);
-            const affordable = balance >= item.price;
-            return (
-              <li
-                key={item.id}
-                className="rounded border border-zinc-200 dark:border-zinc-800 p-4 flex flex-col gap-2 bg-white dark:bg-zinc-900"
-              >
-                <div className="flex justify-between items-baseline">
-                  <span className="font-medium">{item.name}</span>
-                  <span className="text-xs text-zinc-500">{item.category}</span>
-                </div>
-                <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {item.price.toLocaleString()} 코인
-                </span>
-                {isOwned ? (
-                  <span className="text-sm text-zinc-400">보유 중</span>
-                ) : affordable ? (
-                  <Link
-                    href={`/shop/checkout/${item.id}`}
-                    className="text-sm text-center rounded bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5"
-                  >
-                    구매하기
-                  </Link>
-                ) : (
-                  <span className="text-sm text-center text-red-500">코인 부족</span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <div className="w-full max-w-3xl flex flex-col gap-8">
+          {[...grouped.entries()].map(([category, catItems]) => (
+            <section key={category} className="flex flex-col gap-3">
+              <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide">
+                {categoryLabel(category)}
+              </h2>
+              <ul className="grid gap-4 sm:grid-cols-2">
+                {catItems.map((item) => {
+                  const isOwned = ownedIds.has(item.id);
+                  const affordable = balance >= item.price;
+                  return (
+                    <li
+                      key={item.id}
+                      className="rounded border border-zinc-200 dark:border-zinc-800 p-4 flex flex-col gap-2 bg-white dark:bg-zinc-900"
+                    >
+                      <span className="font-medium">{item.name}</span>
+                      <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                        {item.price.toLocaleString()} 코인
+                      </span>
+                      {isOwned ? (
+                        <span className="text-sm text-zinc-400">보유 중</span>
+                      ) : affordable ? (
+                        <Link
+                          href={`/shop/checkout/${item.id}`}
+                          className="text-sm text-center rounded bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5"
+                        >
+                          구매하기
+                        </Link>
+                      ) : (
+                        <span className="text-sm text-center text-red-500">코인 부족</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
       )}
 
       <Link href="/" className="text-sm underline text-zinc-500">← 홈으로</Link>

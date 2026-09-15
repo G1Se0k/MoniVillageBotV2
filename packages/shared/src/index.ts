@@ -1,4 +1,5 @@
 export * from './constants/mbti';
+export * from './constants/items';
 export * from './database/sequelize';
 export * from './database/database';
 export * from './database/relations';

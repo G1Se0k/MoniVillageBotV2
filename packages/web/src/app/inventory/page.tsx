@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Item, UserItem } from '@moni/shared';
+import { Item, UserItem, categoryLabel } from '@moni/shared';
 import { readSession } from '@/lib/session';
 import { equipItem, unequipItem } from '@/lib/inventory';
 
@@ -48,7 +48,7 @@ export default async function Inventory({ searchParams }: InventoryProps) {
           {[...grouped.entries()].map(([category, rows]) => (
             <section key={category} className="flex flex-col gap-3">
               <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide">
-                {category}
+                {categoryLabel(category)}
               </h2>
               <ul className="grid gap-3 sm:grid-cols-2">
                 {rows.map(({ userItem, item }) => (
