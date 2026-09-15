@@ -20,16 +20,13 @@ export default async function Inventory({ searchParams }: InventoryProps) {
 
   const owned = await UserItem.findAll({
     where: { user_id: user.id },
+    include: [{ model: Item, required: true }],
     order: [['acquired_at', 'DESC']],
   });
-  const items = owned.length
-    ? await Item.findAll({ where: { id: owned.map((o) => o.item_id) } })
-    : [];
-  const byId = new Map(items.map((i) => [i.id, i]));
 
   const grouped = new Map<string, Array<{ userItem: UserItem; item: Item }>>();
   for (const u of owned) {
-    const item = byId.get(u.item_id);
+    const item = u.Item;
     if (!item) continue;
     const list = grouped.get(item.category) ?? [];
     list.push({ userItem: u, item });

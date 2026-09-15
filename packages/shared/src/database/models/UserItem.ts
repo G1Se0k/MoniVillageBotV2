@@ -1,5 +1,6 @@
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from '../sequelize';
+import type { Item } from './Item';
 
 interface UserItemAttributes {
   id: number;
@@ -21,6 +22,7 @@ export class UserItem extends Model<UserItemAttributes, UserItemCreationAttribut
   public item_id!: number;
   public equipped!: boolean;
   public acquired_at!: Date;
+  public readonly Item?: Item;
 }
 
 UserItem.init(

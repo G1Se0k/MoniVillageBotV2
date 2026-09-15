@@ -6,7 +6,9 @@ export async function connectDatabase() {
   try {
     await sequelize.authenticate();
     initRelations();
-    await sequelize.sync({ alter: true });
+    // ponytail: prod은 migration 도구 도입 시까지 sync만; alter는 dev 편의용
+    const alter = process.env.NODE_ENV !== 'production';
+    await sequelize.sync(alter ? { alter: true } : {});
     await seedItems();
     console.log('Database connected');
   } catch (error) {
