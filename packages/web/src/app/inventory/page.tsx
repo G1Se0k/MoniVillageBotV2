@@ -82,18 +82,18 @@ export default async function Inventory({ searchParams }: InventoryProps) {
                           : 'border-white/60 dark:border-white/10 bg-white/70 dark:bg-zinc-900/60 shadow-orange-500/5 hover:shadow-orange-500/10'
                       }`}
                     >
-                      <div className="flex justify-between items-baseline">
-                        {isSymbol && symbol ? (
-                          <span className="text-4xl">{symbol}</span>
-                        ) : (
-                          <span className="font-semibold">{item.name}</span>
-                        )}
-                        {isSymbol && userItem.equipped && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-sm">
-                            장착 중
-                          </span>
-                        )}
-                      </div>
+                      {isSymbol && symbol ? (
+                        <>
+                          <span className="text-4xl text-center py-2">{symbol}</span>
+                          {userItem.equipped && (
+                            <span className="absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-sm">
+                              장착 중
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="font-semibold">{item.name}</span>
+                      )}
                       {isSymbol ? (
                         <form action={userItem.equipped ? unequipItem : equipItem}>
                           <input type="hidden" name="itemId" value={item.id} />
