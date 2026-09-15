@@ -1,22 +1,21 @@
 import { Item } from './models/Item';
 import { UserItem } from './models/UserItem';
-import { UserWallet } from './models/UserWallet';
+import { sequelize } from './sequelize';
 
-/** 지갑을 생성-확인 후 balance에 amount를 원자적으로 더함. */
+/** balance += amount 를 지갑 upsert와 한 쿼리로 원자 처리 (MySQL). */
 export async function creditCoin(userId: string, amount: number): Promise<void> {
   if (amount <= 0) return;
-  await UserWallet.findOrCreate({
-    where: { user_id: userId },
-    defaults: { user_id: userId, balance: 0 },
-  });
-  await UserWallet.increment({ balance: amount }, { where: { user_id: userId } });
+  await sequelize.query(
+    'INSERT INTO user_wallets (user_id, balance) VALUES (?, ?) ON DUPLICATE KEY UPDATE balance = balance + ?',
+    { replacements: [userId, amount, amount] },
+  );
 }
 
 export async function getEquippedSymbol(userId: string): Promise<string | null> {
-  const owned = await UserItem.findAll({ where: { user_id: userId, equipped: true } });
-  if (owned.length === 0) return null;
-  const items = await Item.findAll({ where: { id: owned.map((o) => o.item_id) } });
-  const symbolItem = items.find((i) => i.category === 'nickname_symbol');
-  const payload = symbolItem?.payload as { symbol?: string } | undefined;
+  const owned = await UserItem.findOne({
+    where: { user_id: userId, equipped: true },
+    include: [{ model: Item, where: { category: 'nickname_symbol' }, required: true }],
+  });
+  const payload = owned?.Item?.payload as { symbol?: string } | undefined;
   return payload?.symbol ?? null;
 }

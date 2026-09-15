@@ -12,10 +12,11 @@ interface HomeProps {
 export default async function Home({ searchParams }: HomeProps) {
   const user = await readSession();
   const { login_error } = await searchParams;
-  const guild = await getGuildIcon(256);
-  const [admin, guildMember] = user
-    ? await Promise.all([canAccessWallet(user.id), getGuildMember(user.id)])
-    : [false, null];
+  const [guild, admin, guildMember] = await Promise.all([
+    getGuildIcon(256),
+    user ? canAccessWallet(user.id) : Promise.resolve(false),
+    user ? getGuildMember(user.id) : Promise.resolve(null),
+  ]);
   const member = !!guildMember;
   const displayName = guildMember?.nick ?? user?.username ?? '';
 
