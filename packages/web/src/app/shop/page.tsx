@@ -59,13 +59,21 @@ export default async function Shop({ searchParams }: ShopProps) {
                 {catItems.map((item) => {
                   const isOwned = ownedIds.has(item.id);
                   const affordable = balance >= item.price;
+                  const isSymbol = item.category === 'nickname_symbol';
+                  const symbol = isSymbol
+                    ? (item.payload as { symbol?: string } | undefined)?.symbol
+                    : null;
                   return (
                     <li
                       key={item.id}
                       className="rounded border border-zinc-200 dark:border-zinc-800 p-4 flex flex-col gap-2 bg-white dark:bg-zinc-900"
                     >
-                      <span className="font-medium">{item.name}</span>
-                      <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                      {isSymbol && symbol ? (
+                        <span className="text-4xl text-center py-2">{symbol}</span>
+                      ) : (
+                        <span className="font-medium">{item.name}</span>
+                      )}
+                      <span className="text-sm text-zinc-600 dark:text-zinc-400 text-center">
                         {item.price.toLocaleString()} 코인
                       </span>
                       {isOwned ? (
