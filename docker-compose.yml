@@ -15,7 +15,6 @@ services:
     container_name: monivillagebot-web
     env_file:
       - .env
-      - packages/web/.env.local
     ports:
       - "3000:3000"
     restart: unless-stopped
