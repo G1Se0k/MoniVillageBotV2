@@ -51,34 +51,41 @@ export default async function Inventory({ searchParams }: InventoryProps) {
                 {categoryLabel(category)}
               </h2>
               <ul className="grid gap-3 sm:grid-cols-2">
-                {rows.map(({ userItem, item }) => (
-                  <li
-                    key={userItem.id}
-                    className="rounded border border-zinc-200 dark:border-zinc-800 p-4 flex flex-col gap-2 bg-white dark:bg-zinc-900"
-                  >
-                    <div className="flex justify-between items-baseline">
-                      <span className="font-medium">{item.name}</span>
-                      {userItem.equipped && (
-                        <span className="text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                          장착 중
-                        </span>
+                {rows.map(({ userItem, item }) => {
+                  const equippable = item.category === 'nickname_symbol';
+                  return (
+                    <li
+                      key={userItem.id}
+                      className="rounded border border-zinc-200 dark:border-zinc-800 p-4 flex flex-col gap-2 bg-white dark:bg-zinc-900"
+                    >
+                      <div className="flex justify-between items-baseline">
+                        <span className="font-medium">{item.name}</span>
+                        {equippable && userItem.equipped && (
+                          <span className="text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                            장착 중
+                          </span>
+                        )}
+                      </div>
+                      {equippable ? (
+                        <form action={userItem.equipped ? unequipItem : equipItem}>
+                          <input type="hidden" name="itemId" value={item.id} />
+                          <button
+                            type="submit"
+                            className={`w-full text-sm rounded px-3 py-1.5 ${
+                              userItem.equipped
+                                ? 'border border-zinc-300 dark:border-zinc-700'
+                                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                            }`}
+                          >
+                            {userItem.equipped ? '해제' : '장착'}
+                          </button>
+                        </form>
+                      ) : (
+                        <span className="text-xs text-zinc-500">보유 중 · 상시 이용 가능</span>
                       )}
-                    </div>
-                    <form action={userItem.equipped ? unequipItem : equipItem}>
-                      <input type="hidden" name="itemId" value={item.id} />
-                      <button
-                        type="submit"
-                        className={`w-full text-sm rounded px-3 py-1.5 ${
-                          userItem.equipped
-                            ? 'border border-zinc-300 dark:border-zinc-700'
-                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                        }`}
-                      >
-                        {userItem.equipped ? '해제' : '장착'}
-                      </button>
-                    </form>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           ))}
