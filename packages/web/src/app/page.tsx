@@ -16,12 +16,7 @@ export default async function Home({ searchParams }: HomeProps) {
     : null;
 
   return (
-    <main className="min-h-screen relative flex flex-col items-center justify-center p-6 gap-8 overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-zinc-950 dark:via-black dark:to-indigo-950/40">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-indigo-400/20 blur-3xl dark:bg-indigo-600/20" />
-        <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-purple-400/20 blur-3xl dark:bg-fuchsia-600/20" />
-      </div>
-
+    <main className="min-h-screen flex flex-col items-center justify-center p-6 gap-8">
       <div className="flex flex-col items-center gap-4">
         {guild ? (
           // eslint-disable-next-line @next/next/no-img-element

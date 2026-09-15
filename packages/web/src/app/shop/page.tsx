@@ -52,28 +52,36 @@ export default async function Shop({ searchParams }: ShopProps) {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center p-8 gap-6 bg-zinc-50 dark:bg-black">
-      <h1 className="text-3xl font-semibold">채팅 꾸미기 샵</h1>
+    <main className="min-h-screen flex flex-col items-center p-6 gap-6">
+      <header className="w-full max-w-3xl flex flex-col items-center gap-2 pt-4">
+        <p className="text-xs uppercase tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
+          Moni Village
+        </p>
+        <h1 className="text-3xl font-bold tracking-tight">채팅 꾸미기 샵</h1>
+      </header>
 
-      <div className="flex items-center gap-4 text-sm">
-        <span className="text-zinc-500">보유 코인</span>
-        <span className="font-semibold">{balance.toLocaleString()}</span>
-        <Link href="/wallet" className="underline text-indigo-600 dark:text-indigo-400">
+      <div className="flex items-center gap-3 rounded-full border border-white/60 dark:border-white/10 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-md px-4 py-2 shadow-sm">
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">보유 코인</span>
+        <span className="font-semibold tabular-nums">{balance.toLocaleString()}</span>
+        <Link
+          href="/wallet"
+          className="text-xs rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 py-1 shadow-sm"
+        >
           충전
         </Link>
       </div>
 
-      <nav className="flex flex-wrap gap-2">
+      <nav className="flex flex-wrap justify-center gap-2">
         {['all', ...allCategories].map((c) => {
           const active = c === activeCat;
           return (
             <Link
               key={c}
               href={buildHref({ cat: c })}
-              className={`text-sm rounded-full px-3 py-1 border ${
+              className={`text-sm rounded-full px-4 py-1.5 border transition ${
                 active
-                  ? 'bg-indigo-600 text-white border-indigo-600'
-                  : 'border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400'
+                  ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-transparent shadow-md shadow-indigo-500/25'
+                  : 'border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md hover:border-indigo-400'
               }`}
             >
               {c === 'all' ? '전체' : categoryLabel(c)}
@@ -84,10 +92,10 @@ export default async function Shop({ searchParams }: ShopProps) {
 
       <Link
         href={buildHref({ hideOwned: !hideOwned })}
-        className={`text-xs rounded px-3 py-1.5 border ${
+        className={`text-xs rounded-full px-3 py-1.5 border transition ${
           hideOwned
             ? 'bg-indigo-600 text-white border-indigo-600'
-            : 'border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400'
+            : 'border-zinc-300 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md hover:border-indigo-400'
         }`}
       >
         {hideOwned ? '전체 보기' : '미보유만 보기'}
@@ -104,7 +112,7 @@ export default async function Shop({ searchParams }: ShopProps) {
           {[...grouped.entries()].map(([category, catItems]) => (
             <section key={category} className="flex flex-col gap-3">
               {activeCat === 'all' && (
-                <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide">
+                <h2 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">
                   {categoryLabel(category)}
                 </h2>
               )}
@@ -125,22 +133,24 @@ export default async function Shop({ searchParams }: ShopProps) {
                   return (
                     <li
                       key={item.id}
-                      className="rounded border border-zinc-200 dark:border-zinc-800 p-4 flex flex-col gap-2 bg-white dark:bg-zinc-900"
+                      className="rounded-2xl border border-white/60 dark:border-white/10 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-md p-4 flex flex-col gap-2 shadow-lg shadow-indigo-500/5 transition hover:-translate-y-0.5 hover:shadow-indigo-500/10"
                     >
                       {isSymbol && symbol ? (
                         <span className="text-4xl text-center py-2">{symbol}</span>
                       ) : (
-                        <span className="font-medium">{item.name}</span>
+                        <span className="font-semibold">{item.name}</span>
                       )}
-                      <span className="text-sm text-zinc-600 dark:text-zinc-400 text-center">
+                      <span className="text-sm text-zinc-600 dark:text-zinc-400 text-center tabular-nums">
                         {item.price.toLocaleString()} 코인
                       </span>
                       {isOwned ? (
-                        <span className="text-sm text-zinc-400">보유 중</span>
+                        <span className="text-xs text-center rounded-full py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                          보유 중
+                        </span>
                       ) : affordable ? (
                         <Link
                           href={`/shop/checkout/${item.id}`}
-                          className="text-sm text-center rounded bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5"
+                          className="text-sm text-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 py-1.5 shadow-md shadow-indigo-500/25"
                         >
                           구매하기
                         </Link>
@@ -156,7 +166,9 @@ export default async function Shop({ searchParams }: ShopProps) {
         </div>
       )}
 
-      <Link href="/" className="text-sm underline text-zinc-500">← 홈으로</Link>
+      <Link href="/" className="text-sm text-zinc-500 hover:text-indigo-500 transition">
+        ← 홈으로
+      </Link>
     </main>
   );
 }
