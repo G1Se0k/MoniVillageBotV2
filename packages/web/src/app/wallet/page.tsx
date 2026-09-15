@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { readSession } from '@/lib/session';
-import { isGuildAdmin } from '@/lib/admin';
+import { canAccessWallet } from '@/lib/admin';
 import { getBalance, COIN_PACKAGES } from '@/lib/wallet';
 
 const ERR_MSG: Record<string, string> = {
@@ -21,7 +21,7 @@ interface WalletProps {
 export default async function Wallet({ searchParams }: WalletProps) {
   const user = await readSession();
   if (!user) redirect('/');
-  if (!(await isGuildAdmin(user.id))) redirect('/');
+  if (!(await canAccessWallet(user.id))) redirect('/');
   const { ok, err } = await searchParams;
 
   const balance = await getBalance(user.id);

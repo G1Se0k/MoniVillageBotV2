@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { readSession } from '@/lib/session';
-import { isGuildAdmin } from '@/lib/admin';
+import { canAccessWallet } from '@/lib/admin';
 import { getGuildIcon } from '@/lib/guildIcon';
 
 interface HomeProps {
@@ -11,7 +11,7 @@ export default async function Home({ searchParams }: HomeProps) {
   const user = await readSession();
   const { login_error } = await searchParams;
   const guild = await getGuildIcon(256);
-  const admin = user ? await isGuildAdmin(user.id) : false;
+  const admin = user ? await canAccessWallet(user.id) : false;
 
   const avatarUrl = user?.avatar
     ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64`

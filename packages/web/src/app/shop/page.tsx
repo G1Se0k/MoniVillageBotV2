@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Item, UserItem, categoryLabel } from '@moni/shared';
 import { readSession } from '@/lib/session';
-import { isGuildAdmin } from '@/lib/admin';
+import { canAccessWallet } from '@/lib/admin';
 import { getBalance } from '@/lib/wallet';
 
 const ERR_MSG: Record<string, string> = {
@@ -25,7 +25,7 @@ export default async function Shop({ searchParams }: ShopProps) {
     Item.findAll({ where: { active: true }, order: [['category', 'ASC'], ['id', 'ASC']] }),
     UserItem.findAll({ where: { user_id: user.id }, attributes: ['item_id'] }),
     getBalance(user.id),
-    isGuildAdmin(user.id),
+    canAccessWallet(user.id),
   ]);
   const ownedIds = new Set(owned.map((o) => o.item_id));
 

@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Item, categoryLabel } from '@moni/shared';
 import { readSession } from '@/lib/session';
-import { isGuildAdmin } from '@/lib/admin';
+import { canAccessWallet } from '@/lib/admin';
 import { getBalance } from '@/lib/wallet';
 import { purchaseItem } from '@/lib/purchase';
 
@@ -25,7 +25,7 @@ export default async function Checkout({ params, searchParams }: CheckoutProps) 
   const [item, balance, admin] = await Promise.all([
     Item.findByPk(Number(id)),
     getBalance(user.id),
-    isGuildAdmin(user.id),
+    canAccessWallet(user.id),
   ]);
   if (!item || !item.active) notFound();
   const affordable = balance >= item.price;

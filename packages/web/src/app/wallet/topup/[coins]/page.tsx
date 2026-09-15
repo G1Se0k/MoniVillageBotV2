@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { readSession } from '@/lib/session';
-import { isGuildAdmin } from '@/lib/admin';
+import { canAccessWallet } from '@/lib/admin';
 import { packagePrice } from '@/lib/wallet';
 import { TopupButton } from './TopupButton';
 
@@ -12,7 +12,7 @@ interface TopupProps {
 export default async function Topup({ params }: TopupProps) {
   const user = await readSession();
   if (!user) redirect('/');
-  if (!(await isGuildAdmin(user.id))) redirect('/');
+  if (!(await canAccessWallet(user.id))) redirect('/');
 
   const { coins: coinsStr } = await params;
   const coins = Number(coinsStr);
