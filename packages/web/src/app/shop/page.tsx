@@ -108,7 +108,13 @@ export default async function Shop({ searchParams }: ShopProps) {
                   {categoryLabel(category)}
                 </h2>
               )}
-              <ul className="grid gap-4 sm:grid-cols-2">
+              <ul
+                className={`grid gap-4 ${
+                  category === 'nickname_symbol'
+                    ? 'grid-cols-2 sm:grid-cols-4'
+                    : 'sm:grid-cols-2'
+                }`}
+              >
                 {catItems.map((item) => {
                   const isOwned = ownedIds.has(item.id);
                   const affordable = balance >= item.price;

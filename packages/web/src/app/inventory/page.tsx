@@ -47,7 +47,13 @@ export default async function Inventory({ searchParams }: InventoryProps) {
               <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide">
                 {categoryLabel(category)}
               </h2>
-              <ul className="grid gap-3 sm:grid-cols-2">
+              <ul
+                className={`grid gap-3 ${
+                  category === 'nickname_symbol'
+                    ? 'grid-cols-2 sm:grid-cols-4'
+                    : 'sm:grid-cols-2'
+                }`}
+              >
                 {rows.map(({ userItem, item }) => {
                   const isSymbol = item.category === 'nickname_symbol';
                   const symbol = isSymbol
