@@ -10,14 +10,15 @@ const ERR_MSG: Record<string, string> = {
 };
 
 interface ShopProps {
-  searchParams: Promise<{ err?: string; hideOwned?: string }>;
+  searchParams: Promise<{ err?: string; hideOwned?: string; cat?: string }>;
 }
 
 export default async function Shop({ searchParams }: ShopProps) {
   const user = await readSession();
   if (!user) redirect('/');
-  const { err, hideOwned: hideOwnedParam } = await searchParams;
+  const { err, hideOwned: hideOwnedParam, cat: catParam } = await searchParams;
   const hideOwned = hideOwnedParam === '1';
+  const activeCat = catParam && catParam !== 'all' ? catParam : 'all';
 
   const [items, owned, balance] = await Promise.all([
     Item.findAll({ where: { active: true }, order: [['category', 'ASC'], ['id', 'ASC']] }),
@@ -25,7 +26,13 @@ export default async function Shop({ searchParams }: ShopProps) {
     getBalance(user.id),
   ]);
   const ownedIds = new Set(owned.map((o) => o.item_id));
-  const visibleItems = hideOwned ? items.filter((i) => !ownedIds.has(i.id)) : items;
+
+  const allCategories: string[] = [];
+  for (const i of items) if (!allCategories.includes(i.category)) allCategories.push(i.category);
+
+  const visibleItems = items.filter(
+    (i) => (activeCat === 'all' || i.category === activeCat) && (!hideOwned || !ownedIds.has(i.id)),
+  );
 
   const grouped = new Map<string, Item[]>();
   for (const item of visibleItems) {
@@ -33,6 +40,16 @@ export default async function Shop({ searchParams }: ShopProps) {
     list.push(item);
     grouped.set(item.category, list);
   }
+
+  const buildHref = (next: { cat?: string; hideOwned?: boolean }) => {
+    const cat = next.cat ?? activeCat;
+    const owned = next.hideOwned ?? hideOwned;
+    const p = new URLSearchParams();
+    if (cat !== 'all') p.set('cat', cat);
+    if (owned) p.set('hideOwned', '1');
+    const qs = p.toString();
+    return qs ? `/shop?${qs}` : '/shop';
+  };
 
   return (
     <main className="min-h-screen flex flex-col items-center p-8 gap-6 bg-zinc-50 dark:bg-black">
@@ -46,8 +63,27 @@ export default async function Shop({ searchParams }: ShopProps) {
         </Link>
       </div>
 
+      <nav className="flex flex-wrap gap-2">
+        {['all', ...allCategories].map((c) => {
+          const active = c === activeCat;
+          return (
+            <Link
+              key={c}
+              href={buildHref({ cat: c })}
+              className={`text-sm rounded-full px-3 py-1 border ${
+                active
+                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  : 'border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400'
+              }`}
+            >
+              {c === 'all' ? '전체' : categoryLabel(c)}
+            </Link>
+          );
+        })}
+      </nav>
+
       <Link
-        href={hideOwned ? '/shop' : '/shop?hideOwned=1'}
+        href={buildHref({ hideOwned: !hideOwned })}
         className={`text-xs rounded px-3 py-1.5 border ${
           hideOwned
             ? 'bg-indigo-600 text-white border-indigo-600'
@@ -67,9 +103,11 @@ export default async function Shop({ searchParams }: ShopProps) {
         <div className="w-full max-w-3xl flex flex-col gap-8">
           {[...grouped.entries()].map(([category, catItems]) => (
             <section key={category} className="flex flex-col gap-3">
-              <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide">
-                {categoryLabel(category)}
-              </h2>
+              {activeCat === 'all' && (
+                <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide">
+                  {categoryLabel(category)}
+                </h2>
+              )}
               <ul className="grid gap-4 sm:grid-cols-2">
                 {catItems.map((item) => {
                   const isOwned = ownedIds.has(item.id);
