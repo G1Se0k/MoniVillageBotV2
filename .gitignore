@@ -2,6 +2,9 @@
 .env
 .env.*
 src/.env
+# 예시 템플릿은 커밋 허용
+!.env.example
+!.env.*.example
 
 # 빌드 결과물
 dist/
@@ -18,6 +21,7 @@ npm-debug.log*
 
 # OS
 .DS_Store
+._*
 Thumbs.db
 desktop.ini
 
