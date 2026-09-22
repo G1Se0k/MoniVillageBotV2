@@ -22,7 +22,9 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script_stop: true
           script: |
+            export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
             cd /Users/giseok/Documents/MoniVillageBotV2
-            git pull --ff-only
+            git fetch --all
+            git reset --hard origin/main
             docker compose up -d --build
             docker image prune -f
