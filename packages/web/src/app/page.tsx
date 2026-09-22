@@ -1,9 +1,9 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { readSession } from '@/lib/session';
 import { canAccessWallet, getGuildMember } from '@/lib/admin';
 import { getGuildIcon } from '@/lib/guildIcon';
-
-const GUILD_INVITE_URL = 'https://discord.gg/56aT5q7JkS';
+import { isGuest, setGuestCookie } from '@/lib/guest';
 
 interface HomeProps {
   searchParams: Promise<{ login_error?: string }>;
@@ -12,13 +12,20 @@ interface HomeProps {
 export default async function Home({ searchParams }: HomeProps) {
   const user = await readSession();
   const { login_error } = await searchParams;
-  const [guild, admin, guildMember] = await Promise.all([
+  const [guild, admin, guildMember, guest] = await Promise.all([
     getGuildIcon(256),
     user ? canAccessWallet(user.id) : Promise.resolve(false),
     user ? getGuildMember(user.id) : Promise.resolve(null),
+    user ? isGuest() : Promise.resolve(false),
   ]);
   const member = !!guildMember;
   const displayName = guildMember?.nick ?? user?.username ?? '';
+
+  async function enterGuest() {
+    'use server';
+    await setGuestCookie();
+    redirect('/');
+  }
 
   const avatarUrl = user?.avatar
     ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64`
@@ -75,8 +82,8 @@ export default async function Home({ searchParams }: HomeProps) {
             </form>
           </div>
 
-          {member ? (
-            <div className={`grid gap-2 ${admin ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          {member || guest ? (
+            <div className={`grid gap-2 ${admin && member ? 'grid-cols-3' : 'grid-cols-2'}`}>
               <Link
                 href="/shop"
                 className="flex flex-col items-center gap-1 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 py-4 text-sm font-medium shadow-lg shadow-indigo-500/25 transition hover:-translate-y-0.5"
@@ -91,7 +98,7 @@ export default async function Home({ searchParams }: HomeProps) {
                 <span className="text-xl">🎒</span>
                 <span>인벤토리</span>
               </Link>
-              {admin && (
+              {admin && member && (
                 <Link
                   href="/wallet"
                   className="flex flex-col items-center gap-1 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-4 text-sm font-medium hover:border-amber-400 dark:hover:border-orange-500 transition hover:-translate-y-0.5"
@@ -100,20 +107,38 @@ export default async function Home({ searchParams }: HomeProps) {
                   <span>지갑</span>
                 </Link>
               )}
+              {guest && (
+                <p className="col-span-full text-xs text-center text-zinc-500 dark:text-zinc-400">
+                  게스트 모드 · 구매·장착은 이용할 수 없어요
+                </p>
+              )}
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center">
-                모니마을 서버에 참여해야 이용할 수 있어요.
+            <div className="flex flex-col gap-3 rounded-xl border border-amber-300/60 dark:border-orange-500/30 bg-amber-50/70 dark:bg-orange-950/30 p-5">
+              <p className="text-center text-base font-semibold">
+                서버가 비공개 상태입니다
               </p>
-              <a
-                href={GUILD_INVITE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-6 py-3 text-sm font-semibold shadow-lg shadow-indigo-500/30 transition hover:-translate-y-0.5"
-              >
-                서버 참여하기
-              </a>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 text-center">
+                모니마을 서버 멤버만 정식으로 이용할 수 있어요.
+              </p>
+              <div className="flex gap-2">
+                <form action="/api/auth/logout" method="post" className="flex-1">
+                  <button
+                    type="submit"
+                    className="w-full rounded-full border border-zinc-300 dark:border-zinc-700 bg-white/70 dark:bg-zinc-900/70 hover:border-amber-400 px-4 py-2 text-sm font-medium transition"
+                  >
+                    돌아가기
+                  </button>
+                </form>
+                <form action={enterGuest} className="flex-1">
+                  <button
+                    type="submit"
+                    className="w-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2 text-sm font-semibold shadow-md shadow-indigo-500/25 transition"
+                  >
+                    게스트로 입장하기
+                  </button>
+                </form>
+              </div>
             </div>
           )}
         </div>

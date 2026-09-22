@@ -4,6 +4,8 @@ import { Item, UserItem, categoryLabel } from '@moni/shared';
 import { readSession } from '@/lib/session';
 import { canAccessWallet } from '@/lib/admin';
 import { getBalance } from '@/lib/wallet';
+import { isGuest } from '@/lib/guest';
+import GuestBlockedButton from '@/app/_guest-blocked-button';
 
 const ERR_MSG: Record<string, string> = {
   bad_item: '잘못된 아이템 요청',
@@ -21,11 +23,14 @@ export default async function Shop({ searchParams }: ShopProps) {
   const hideOwned = hideOwnedParam === '1';
   const activeCat = catParam && catParam !== 'all' ? catParam : 'all';
 
+  const guest = await isGuest();
   const [items, owned, balance, admin] = await Promise.all([
     Item.findAll({ where: { active: true }, order: [['category', 'ASC'], ['id', 'ASC']] }),
-    UserItem.findAll({ where: { user_id: user.id }, attributes: ['item_id'] }),
-    getBalance(user.id),
-    canAccessWallet(user.id),
+    guest
+      ? Promise.resolve([] as UserItem[])
+      : UserItem.findAll({ where: { user_id: user.id }, attributes: ['item_id'] }),
+    guest ? Promise.resolve(0) : getBalance(user.id),
+    guest ? Promise.resolve(false) : canAccessWallet(user.id),
   ]);
   const ownedIds = new Set(owned.map((o) => o.item_id));
 
@@ -147,7 +152,11 @@ export default async function Shop({ searchParams }: ShopProps) {
                       <span className="text-sm text-zinc-600 dark:text-zinc-400 text-center tabular-nums">
                         {item.price.toLocaleString()} 코인
                       </span>
-                      {isOwned ? (
+                      {guest ? (
+                        <GuestBlockedButton className="text-sm text-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-3 py-1.5 shadow-md shadow-indigo-500/25">
+                          구매하기
+                        </GuestBlockedButton>
+                      ) : isOwned ? (
                         <span className="text-sm text-center rounded-full px-3 py-1.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
                           보유 중
                         </span>

@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { Item, UserItem } from '@moni/shared';
 import { readSession } from './session';
 import { applySymbolToNickname } from './discordNickname';
+import { isGuest } from './guest';
 
 const parseItemId = (formData: FormData) => {
   const id = Number(formData.get('itemId'));
@@ -15,6 +16,7 @@ const parseItemId = (formData: FormData) => {
 export async function equipItem(formData: FormData) {
   const user = await readSession();
   if (!user) redirect('/');
+  if (await isGuest()) redirect('/inventory');
 
   const itemId = parseItemId(formData);
   if (itemId === null) redirect('/inventory?err=bad_item');
@@ -55,6 +57,7 @@ export async function equipItem(formData: FormData) {
 export async function unequipItem(formData: FormData) {
   const user = await readSession();
   if (!user) redirect('/');
+  if (await isGuest()) redirect('/inventory');
 
   const itemId = parseItemId(formData);
   if (itemId === null) redirect('/inventory?err=bad_item');

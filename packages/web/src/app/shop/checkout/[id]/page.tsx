@@ -5,6 +5,7 @@ import { readSession } from '@/lib/session';
 import { canAccessWallet } from '@/lib/admin';
 import { getBalance } from '@/lib/wallet';
 import { purchaseItem } from '@/lib/purchase';
+import { isGuest } from '@/lib/guest';
 
 const ERR_MSG: Record<string, string> = {
   insufficient: '코인이 부족합니다',
@@ -18,6 +19,7 @@ interface CheckoutProps {
 export default async function Checkout({ params, searchParams }: CheckoutProps) {
   const user = await readSession();
   if (!user) redirect('/');
+  if (await isGuest()) redirect('/shop');
 
   const { id } = await params;
   const { err } = await searchParams;

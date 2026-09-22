@@ -3,10 +3,12 @@
 import { redirect } from 'next/navigation';
 import { Item, UserItem, UserWallet, sequelize } from '@moni/shared';
 import { readSession } from './session';
+import { isGuest } from './guest';
 
 export async function purchaseItem(formData: FormData) {
   const user = await readSession();
   if (!user) redirect('/');
+  if (await isGuest()) redirect('/shop');
 
   const itemId = Number(formData.get('itemId'));
   if (!Number.isFinite(itemId)) redirect('/shop?err=bad_item');

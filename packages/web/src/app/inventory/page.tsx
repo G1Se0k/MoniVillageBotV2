@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { Item, UserItem, categoryLabel } from '@moni/shared';
 import { readSession } from '@/lib/session';
 import { equipItem, unequipItem } from '@/lib/inventory';
+import { isGuest } from '@/lib/guest';
+import GuestBlockedButton from '@/app/_guest-blocked-button';
 
 const ERR_MSG: Record<string, string> = {
   bad_item: '잘못된 아이템 요청',
@@ -17,6 +19,7 @@ export default async function Inventory({ searchParams }: InventoryProps) {
   const user = await readSession();
   if (!user) redirect('/');
   const { err } = await searchParams;
+  const guest = await isGuest();
 
   const owned = await UserItem.findAll({
     where: { user_id: user.id },
@@ -94,10 +97,8 @@ export default async function Inventory({ searchParams }: InventoryProps) {
                         <span className="font-semibold">{item.name}</span>
                       )}
                       {isSymbol ? (
-                        <form action={userItem.equipped ? unequipItem : equipItem}>
-                          <input type="hidden" name="itemId" value={item.id} />
-                          <button
-                            type="submit"
+                        guest ? (
+                          <GuestBlockedButton
                             className={`w-full text-sm rounded-full px-3 py-1.5 transition ${
                               userItem.equipped
                                 ? 'border border-zinc-300 dark:border-zinc-700 bg-white/50 dark:bg-zinc-900/50 hover:border-amber-400'
@@ -105,8 +106,22 @@ export default async function Inventory({ searchParams }: InventoryProps) {
                             }`}
                           >
                             {userItem.equipped ? '해제' : '장착'}
-                          </button>
-                        </form>
+                          </GuestBlockedButton>
+                        ) : (
+                          <form action={userItem.equipped ? unequipItem : equipItem}>
+                            <input type="hidden" name="itemId" value={item.id} />
+                            <button
+                              type="submit"
+                              className={`w-full text-sm rounded-full px-3 py-1.5 transition ${
+                                userItem.equipped
+                                  ? 'border border-zinc-300 dark:border-zinc-700 bg-white/50 dark:bg-zinc-900/50 hover:border-amber-400'
+                                  : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-md shadow-indigo-500/25'
+                              }`}
+                            >
+                              {userItem.equipped ? '해제' : '장착'}
+                            </button>
+                          </form>
+                        )
                       ) : (
                         <span className="text-xs text-zinc-500 dark:text-zinc-400">
                           보유 중 · 상시 이용 가능
