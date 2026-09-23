@@ -40,3 +40,6 @@ desktop.ini
 *.tmp
 *.swp
 *.bak
+
+# 서버별 Caddy 설정
+/Caddyfile
