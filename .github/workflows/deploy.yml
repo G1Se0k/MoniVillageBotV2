@@ -25,13 +25,7 @@ jobs:
             set -eu
             export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
             cd /Users/giseok/Documents/MoniVillageBotV2
-            # Git 추적 해제 커밋을 처음 받을 때도 서버 설정을 보존한다.
-            test -f Caddyfile
-            caddy_backup=$(mktemp)
-            cp -p Caddyfile "$caddy_backup"
-            trap 'cp -p "$caddy_backup" Caddyfile; rm -f "$caddy_backup"' EXIT
             git fetch --all
             git reset --hard origin/main
-            cp -p "$caddy_backup" Caddyfile
             docker compose up -d --build
             docker image prune -f
